@@ -1,4 +1,12 @@
-#include "mfcpch.h"
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 #include          "statistc.h"
 #include          "gap_map.h"
 
@@ -87,7 +95,8 @@ GAPMAP::GAPMAP(                 //Constructor
         if ((gap_width > gapmap_big_gaps * row->xheight)
         && gap_width > 2) {
           max_quantum = (blob_box.left () - min_left) / bucket_size;
-          for (i = 0; i <= max_quantum; i++)
+          if (max_quantum > map_max) max_quantum = map_max;
+            for (i = 0; i <= max_quantum; i++)
             map[i]++;
         }
       }
@@ -99,6 +108,7 @@ GAPMAP::GAPMAP(                 //Constructor
           min_quantum =
             (prev_blob_box.right () - min_left) / bucket_size;
           max_quantum = (blob_box.left () - min_left) / bucket_size;
+          if (max_quantum > map_max) max_quantum = map_max;
           for (i = min_quantum; i <= max_quantum; i++)
             map[i]++;
         }
@@ -111,6 +121,7 @@ GAPMAP::GAPMAP(                 //Constructor
         && gap_width > 2) {
           min_quantum =
             (prev_blob_box.right () - min_left) / bucket_size;
+          if (min_quantum < 0) min_quantum = 0;
           for (i = min_quantum; i <= map_max; i++)
             map[i]++;
         }
@@ -159,6 +170,11 @@ BOOL8 GAPMAP::table_gap(             //Is gap a table?
 
   min_quantum = (left - min_left) / bucket_size;
   max_quantum = (right - min_left) / bucket_size;
+  // Clip to the bounds of the array. In some circumstances (big blob followed
+  // by small blob) max_quantum can exceed the map_max bounds, but we clip
+  // here instead, as it provides better long-term safety.
+  if (min_quantum < 0) min_quantum = 0;
+  if (max_quantum > map_max) max_quantum = map_max;
   for (i = min_quantum; (!tab_found && (i <= max_quantum)); i++)
     if (map[i] > total_rows / 2)
       tab_found = TRUE;

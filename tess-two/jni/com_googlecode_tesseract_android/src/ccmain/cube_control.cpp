@@ -5,6 +5,16 @@
  * Author:      Raquel Romano
  * Created:     September 2009
  *
+ * (C) Copyright 2009, Google Inc.
+ ** Licensed under the Apache License, Version 2.0 (the "License");
+ ** you may not use this file except in compliance with the License.
+ ** You may obtain a copy of the License at
+ ** http://www.apache.org/licenses/LICENSE-2.0
+ ** Unless required by applicable law or agreed to in writing, software
+ ** distributed under the License is distributed on an "AS IS" BASIS,
+ ** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ ** See the License for the specific language governing permissions and
+ ** limitations under the License.
  **********************************************************************/
 
 // Include automatically generated configuration file if running autoconf.
@@ -21,24 +31,24 @@
 
 namespace tesseract {
 
-/**********************************************************************
- * convert_prob_to_tess_certainty
+/**
+ * @name convert_prob_to_tess_certainty
  *
  * Normalize a probability in the range [0.0, 1.0] to a tesseract
  * certainty in the range [-20.0, 0.0]
- **********************************************************************/
+ */
 static float convert_prob_to_tess_certainty(float prob) {
   return (prob - 1.0) * 20.0;
 }
 
-/**********************************************************************
- * char_box_to_tbox
+/**
+ * @name char_box_to_tbox
  *
  * Create a TBOX from a character bounding box. If nonzero, the
  * x_offset accounts for any additional padding of the word box that
  * should be taken into account.
  *
- **********************************************************************/
+ */
 TBOX char_box_to_tbox(Box* char_box, TBOX word_box, int x_offset) {
   l_int32 left;
   l_int32 top;
@@ -55,13 +65,13 @@ TBOX char_box_to_tbox(Box* char_box, TBOX word_box, int x_offset) {
   return TBOX(left, bottom, right, top);
 }
 
-/**********************************************************************
- * extract_cube_state
+/**
+ * @name extract_cube_state
  *
  * Extract CharSamp objects and character bounding boxes from the
  * CubeObject's state. The caller should free both structres.
  *
-**********************************************************************/
+ */
 bool Tesseract::extract_cube_state(CubeObject* cube_obj,
                                    int* num_chars,
                                    Boxa** char_boxes,
@@ -104,15 +114,15 @@ bool Tesseract::extract_cube_state(CubeObject* cube_obj,
   return true;
 }
 
-/**********************************************************************
- * create_cube_box_word
+/**
+ * @name create_cube_box_word
  *
  * Fill the given BoxWord with boxes from character bounding
  * boxes. The char_boxes have local coordinates w.r.t. the
  * word bounding box, i.e., the left-most character bbox of each word
  * has (0,0) left-top coord, but the BoxWord must be defined in page
  * coordinates.
- **********************************************************************/
+ */
 bool Tesseract::create_cube_box_word(Boxa *char_boxes,
                                      int num_chars,
                                      TBOX word_box,
@@ -144,61 +154,13 @@ bool Tesseract::create_cube_box_word(Boxa *char_boxes,
   return true;
 }
 
-/**********************************************************************
- * create_werd_choice
- *
- **********************************************************************/
-static WERD_CHOICE *create_werd_choice(
-                                       CharSamp** char_samples,
-                                       int num_chars,
-                                       const char* str,
-                                       float certainty,
-                                       const UNICHARSET &unicharset,
-                                       CharSet* cube_char_set
-                                       ) {
-  // Insert unichar ids into WERD_CHOICE
-  WERD_CHOICE *werd_choice = new WERD_CHOICE(&unicharset, num_chars);
-  // within a word, cube recognizes the word in reading order.
-  werd_choice->set_unichars_in_script_order(true);
-  ASSERT_HOST(werd_choice != NULL);
-  UNICHAR_ID uch_id;
-  for (int i = 0; i < num_chars; ++i) {
-    uch_id = cube_char_set->UnicharID(char_samples[i]->StrLabel());
-    if (uch_id != INVALID_UNICHAR_ID)
-      werd_choice->append_unichar_id_space_allocated(
-          uch_id, 1, 0.0, certainty);
-  }
-
-  BLOB_CHOICE *blob_choice;
-  BLOB_CHOICE_LIST *choices_list;
-  BLOB_CHOICE_IT choices_list_it;
-  BLOB_CHOICE_LIST_CLIST *blob_choices = new BLOB_CHOICE_LIST_CLIST();
-  BLOB_CHOICE_LIST_C_IT blob_choices_it;
-  blob_choices_it.set_to_list(blob_choices);
-
-  for (int i = 0; i < werd_choice->length(); ++i) {
-    // Create new BLOB_CHOICE_LIST for this unichar
-    choices_list = new BLOB_CHOICE_LIST();
-    choices_list_it.set_to_list(choices_list);
-    // Add a single BLOB_CHOICE to the list
-    blob_choice = new BLOB_CHOICE(werd_choice->unichar_id(i),
-                                  0.0, certainty, -1, -1, 0, 0, 0, false);
-    choices_list_it.add_after_then_move(blob_choice);
-    // Add list to the clist
-    blob_choices_it.add_to_end(choices_list);
-  }
-  werd_choice->set_certainty(certainty);
-  werd_choice->set_blob_choices(blob_choices);
-  return werd_choice;
-}
-
-/**********************************************************************
- * init_cube_objects
+/**
+ * @name init_cube_objects
  *
  * Instantiates Tesseract object's CubeRecoContext and TesseractCubeCombiner.
  * Returns false if cube context could not be created or if load_combiner is
  * true, but the combiner could not be loaded.
- **********************************************************************/
+ */
 bool Tesseract::init_cube_objects(bool load_combiner,
                                   TessdataManager *tessdata_manager) {
   ASSERT_HOST(cube_cntxt_ == NULL);
@@ -217,13 +179,11 @@ bool Tesseract::init_cube_objects(bool load_combiner,
   // Create the combiner object and load the combiner net for target languages.
   if (load_combiner) {
     tess_cube_combiner_ = new tesseract::TesseractCubeCombiner(cube_cntxt_);
-    if (!tess_cube_combiner_ || !tess_cube_combiner_->LoadCombinerNet()) {
+    if (!tess_cube_combiner_->LoadCombinerNet()) {
       delete cube_cntxt_;
       cube_cntxt_ = NULL;
-      if (tess_cube_combiner_ != NULL) {
-        delete tess_cube_combiner_;
-        tess_cube_combiner_ = NULL;
-      }
+      delete tess_cube_combiner_;
+      tess_cube_combiner_ = NULL;
       if (cube_debug_level > 0)
         tprintf("Cube ERROR (Failed to instantiate TesseractCubeCombiner\n");
       return false;
@@ -232,12 +192,12 @@ bool Tesseract::init_cube_objects(bool load_combiner,
   return true;
 }
 
-/**********************************************************************
- * run_cube_combiner
+/**
+ * @name run_cube_combiner
  *
  * Iterates through tesseract's results and calls cube on each word,
  * combining the results with the existing tesseract result.
- **********************************************************************/
+ */
 void Tesseract::run_cube_combiner(PAGE_RES *page_res) {
   if (page_res == NULL || tess_cube_combiner_ == NULL)
     return;
@@ -245,6 +205,9 @@ void Tesseract::run_cube_combiner(PAGE_RES *page_res) {
   // Iterate through the word results and call cube on each word.
   for (page_res_it.restart_page(); page_res_it.word () != NULL;
        page_res_it.forward()) {
+    BLOCK* block = page_res_it.block()->block;
+    if (block->poly_block() != NULL && !block->poly_block()->IsText())
+      continue;  // Don't deal with non-text blocks.
     WERD_RES* word = page_res_it.word();
     // Skip cube entirely if tesseract's certainty is greater than threshold.
     int combiner_run_thresh = convert_prob_to_tess_certainty(
@@ -258,6 +221,11 @@ void Tesseract::run_cube_combiner(PAGE_RES *page_res) {
     // Setup a trial WERD_RES in which to classify with cube.
     WERD_RES cube_word;
     cube_word.InitForRetryRecognition(*word);
+    cube_word.SetupForRecognition(lang_tess->unicharset, this, BestPix(),
+                                  OEM_CUBE_ONLY,
+                                  NULL, false, false, false,
+                                  page_res_it.row()->row,
+                                  page_res_it.block()->block);
     CubeObject *cube_obj = lang_tess->cube_recognize_word(
         page_res_it.block()->block, &cube_word);
     if (cube_obj != NULL)
@@ -266,23 +234,23 @@ void Tesseract::run_cube_combiner(PAGE_RES *page_res) {
   }
 }
 
-/**********************************************************************
- * cube_word_pass1
+/**
+ * @name cube_word_pass1
  *
  * Recognizes a single word using (only) cube. Compatible with
  * Tesseract's classify_word_pass1/classify_word_pass2.
- **********************************************************************/
+ */
 void Tesseract::cube_word_pass1(BLOCK* block, ROW *row, WERD_RES *word) {
   CubeObject *cube_obj = cube_recognize_word(block, word);
   delete cube_obj;
 }
 
-/**********************************************************************
- * cube_recognize_word
+/**
+ * @name cube_recognize_word
  *
  * Cube recognizer to recognize a single word as with classify_word_pass1
  * but also returns the cube object in case the combiner is needed.
- **********************************************************************/
+ */
 CubeObject* Tesseract::cube_recognize_word(BLOCK* block, WERD_RES* word) {
   if (!cube_binary_ || !cube_cntxt_) {
     if (cube_debug_level > 0 && !cube_binary_)
@@ -314,12 +282,12 @@ CubeObject* Tesseract::cube_recognize_word(BLOCK* block, WERD_RES* word) {
   return cube_obj;
 }
 
-/**********************************************************************
- * cube_combine_word
+/**
+ * @name cube_combine_word
  *
  * Combines the cube and tesseract results for a single word, leaving the
  * result in tess_word.
- **********************************************************************/
+ */
 void Tesseract::cube_combine_word(CubeObject* cube_obj, WERD_RES* cube_word,
                                   WERD_RES* tess_word) {
   float combiner_prob = tess_cube_combiner_->CombineResults(tess_word,
@@ -357,18 +325,14 @@ void Tesseract::cube_combine_word(CubeObject* cube_obj, WERD_RES* cube_word,
   tess_word->ConsumeWordResults(cube_word);
 }
 
-/**********************************************************************
- * cube_recognize
+/**
+ * @name cube_recognize
  *
  * Call cube on the current word, and write the result to word.
  * Sets up a fake result and returns false if something goes wrong.
- **********************************************************************/
+ */
 bool Tesseract::cube_recognize(CubeObject *cube_obj, BLOCK* block,
                                WERD_RES *word) {
-  if (!word->SetupForCubeRecognition(unicharset, this, block)) {
-    return false;  // Graphics block.
-  }
-
   // Run cube
   WordAltList *cube_alt_list = cube_obj->RecognizeWord();
   if (!cube_alt_list || cube_alt_list->AltCount() <= 0) {
@@ -419,46 +383,44 @@ bool Tesseract::cube_recognize(CubeObject *cube_obj, BLOCK* block,
     return false;
   }
 
-  // Create cube's best choice.
-  WERD_CHOICE* cube_werd_choice = create_werd_choice(
-      char_samples, num_chars, cube_best_str.c_str(), cube_certainty,
-      unicharset, cube_cntxt_->CharacterSet());
-  delete []char_samples;
+  // Fill tesseract result's fields with cube results
+  fill_werd_res(cube_box_word, cube_best_str.c_str(), word);
 
-  if (!cube_werd_choice) {
-    if (cube_debug_level > 0) {
-      tprintf("Cube WARNING (Tesseract::cube_recognize): Could not "
-              "create cube WERD_CHOICE\n");
-    }
-    word->SetupFake(unicharset);
-    return false;
+  // Create cube's best choice.
+  BLOB_CHOICE** choices = new BLOB_CHOICE*[num_chars];
+  for (int i = 0; i < num_chars; ++i) {
+    UNICHAR_ID uch_id =
+        cube_cntxt_->CharacterSet()->UnicharID(char_samples[i]->StrLabel());
+    choices[i] = new BLOB_CHOICE(uch_id, -cube_certainty, cube_certainty,
+                                 -1, 0.0f, 0.0f, 0.0f, BCC_STATIC_CLASSIFIER);
   }
+  word->FakeClassifyWord(num_chars, choices);
+  // within a word, cube recognizes the word in reading order.
+  word->best_choice->set_unichars_in_script_order(true);
+  delete [] choices;
+  delete [] char_samples;
+
+  // Some sanity checks
+  ASSERT_HOST(word->best_choice->length() == word->reject_map.length());
+
   if (cube_debug_level || classify_debug_level) {
     tprintf("Cube result: %s r=%g, c=%g\n",
-            cube_werd_choice->unichar_string().string(),
-            cube_werd_choice->rating(),
-            cube_werd_choice->certainty());
+            word->best_choice->unichar_string().string(),
+            word->best_choice->rating(),
+            word->best_choice->certainty());
   }
-
-  // Fill tesseract result's fields with cube results
-  fill_werd_res(cube_box_word, cube_werd_choice, cube_best_str.c_str(), word);
   return true;
 }
 
-/**********************************************************************
- * fill_werd_res
+/**
+ * @name fill_werd_res
  *
  * Fill Tesseract's word result fields with cube's.
  *
- **********************************************************************/
+ */
 void Tesseract::fill_werd_res(const BoxWord& cube_box_word,
-                              WERD_CHOICE* cube_werd_choice,
                               const char* cube_best_str,
                               WERD_RES* tess_werd_res) {
-  // Replace tesseract results's best choice with cube's
-  tess_werd_res->best_choice = cube_werd_choice;
-  tess_werd_res->raw_choice = new WERD_CHOICE(*cube_werd_choice);
-
   delete tess_werd_res->box_word;
   tess_werd_res->box_word = new BoxWord(cube_box_word);
   tess_werd_res->box_word->ClipToOriginalWord(tess_werd_res->denorm.block(),
@@ -466,23 +428,13 @@ void Tesseract::fill_werd_res(const BoxWord& cube_box_word,
   // Fill text and remaining fields
   tess_werd_res->word->set_text(cube_best_str);
   tess_werd_res->tess_failed = FALSE;
-  tess_werd_res->tess_accepted =
-      tess_acceptable_word(tess_werd_res->best_choice,
-                           tess_werd_res->raw_choice);
+  tess_werd_res->tess_accepted = tess_acceptable_word(tess_werd_res);
   // There is no output word, so we can' call AdaptableWord, but then I don't
   // think we need to. Fudge the result with accepted.
   tess_werd_res->tess_would_adapt = tess_werd_res->tess_accepted;
 
-  // Initialize the reject_map and set it to done, i.e., ignore all of
-  // tesseract's tests for rejection
-  tess_werd_res->reject_map.initialise(cube_werd_choice->length());
+  // Set word to done, i.e., ignore all of tesseract's tests for rejection
   tess_werd_res->done = tess_werd_res->tess_accepted;
-
-  // Some sanity checks
-  ASSERT_HOST(tess_werd_res->best_choice->length() ==
-              tess_werd_res->best_choice->blob_choices()->length());
-  ASSERT_HOST(tess_werd_res->best_choice->length() ==
-              tess_werd_res->reject_map.length());
 }
 
 }  // namespace tesseract

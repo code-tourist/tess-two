@@ -37,18 +37,16 @@ static void MakePtrasFromPixa(PIXA *pixa, L_PTRA **ppapix, L_PTRA **ppabox,
 static PIXA *ReconstructPixa(L_PTRA *papix, L_PTRA *pabox, l_int32 choose);
 static PIXA *ReconstructPixa1(L_PTRA *papix, L_PTRA *pabox);
 static PIXA *ReconstructPixa2(L_PTRA *papix, L_PTRA *pabox);
-static void CopyPtras(L_PTRA *papixs, L_PTRA *paboxs,
-                      L_PTRA **ppapixd, L_PTRA **ppaboxd);
 static void DisplayResult(PIXA *pixac, PIXA **ppixa, l_int32 w, l_int32 h,
                           l_int32 newline);
 
 #define  CHOOSE_RECON    2    /* 1 or 2 */
 
 
-main(int    argc,
-     char **argv)
+int main(int    argc,
+         char **argv)
 {
-l_int32      i, n, w, h, nactual, j, imax;
+l_int32      i, n, w, h, nactual, imax;
 BOX         *box;
 BOXA        *boxa;
 PIX         *pixs, *pixd, *pix;
@@ -57,12 +55,12 @@ L_PTRA      *papix, *pabox, *papix2, *pabox2;
 static char  mainName[] = "ptra1_reg";
 
     if (argc != 1)
-	exit(ERROR_INT(" Syntax: ptra1_reg", mainName, 1));
+        return ERROR_INT(" Syntax: ptra1_reg", mainName, 1);
 
     pixac = pixaCreate(0);
 
     if ((pixs = pixRead("lucasta.1.300.tif")) == NULL)
-	exit(ERROR_INT("pixs not made", mainName, 1));
+        return ERROR_INT("pixs not made", mainName, 1);
     pixGetDimensions(pixs, &w, &h, NULL);
     boxa = pixConnComp(pixs, &pixas, 8);
     pixDestroy(&pixs);
@@ -353,29 +351,6 @@ PIXA    *pixat;
 
 
 static void
-CopyPtras(L_PTRA   *papixs,
-          L_PTRA   *paboxs,
-          L_PTRA  **ppapixd,
-          L_PTRA  **ppaboxd)
-{
-l_int32  i, imax;
-BOX     *box;
-PIX     *pix;
-
-    ptraGetMaxIndex(papixs, &imax);
-    *ppapixd = ptraCreate(imax + 1);
-    *ppaboxd = ptraCreate(imax + 1);
-    for (i = 0; i <= imax; i++) {
-        pix = pixCopy(NULL, (PIX *)ptraGetPtrToItem(papixs, i));
-        box = boxCopy((BOX *)ptraGetPtrToItem(paboxs, i));
-        ptraAdd(*ppapixd, pix);
-        ptraAdd(*ppaboxd, box);
-    }
-    return;
-}
-
-
-static void
 DisplayResult(PIXA   *pixac,
               PIXA  **ppixa,
               l_int32  w,
@@ -390,5 +365,3 @@ PIX   *pixd;
     pixaDestroy(ppixa);
     return;
 }
-
-

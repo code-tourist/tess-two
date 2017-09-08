@@ -24,8 +24,9 @@
  -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
-/*
- *  edge.c
+/*!
+ * \file edge.c
+ * <pre>
  *
  *      Sobel edge detecting filter
  *          PIX      *pixSobelEdgeFilter()
@@ -54,6 +55,7 @@
  *
  *  See comments below for displaying the resulting image with
  *  the edges dark, both for 8 bpp and 1 bpp.
+ * </pre>
  */
 
 #include "allheaders.h"
@@ -63,13 +65,14 @@
  *                    Sobel edge detecting filter                       *
  *----------------------------------------------------------------------*/
 /*!
- *  pixSobelEdgeFilter()
+ * \brief   pixSobelEdgeFilter()
  *
- *      Input:  pixs (8 bpp; no colormap)
- *              orientflag (L_HORIZONTAL_EDGES, L_VERTICAL_EDGES, L_ALL_EDGES)
- *      Return: pixd (8 bpp, edges are brighter), or null on error
+ * \param[in]    pixs 8 bpp; no colormap
+ * \param[in]    orientflag L_HORIZONTAL_EDGES, L_VERTICAL_EDGES, L_ALL_EDGES
+ * \return  pixd 8 bpp, edges are brighter, or NULL on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) Invert pixd to see larger gradients as darker (grayscale).
  *      (2) To generate a binary image of the edges, threshold
  *          the result using pixThresholdToBinary().  If the high
@@ -82,6 +85,7 @@
  *          Read the data incrementally across the image and unroll
  *          the loop.
  *      (4) This runs at about 45 Mpix/sec on a 3 GHz processor.
+ * </pre>
  */
 PIX *
 pixSobelEdgeFilter(PIX     *pixs,
@@ -164,13 +168,14 @@ PIX       *pixt, *pixd;
  *                   Two-sided edge gradient filter                     *
  *----------------------------------------------------------------------*/
 /*!
- *  pixTwoSidedEdgeFilter()
+ * \brief   pixTwoSidedEdgeFilter()
  *
- *      Input:  pixs (8 bpp; no colormap)
- *              orientflag (L_HORIZONTAL_EDGES, L_VERTICAL_EDGES)
- *      Return: pixd (8 bpp, edges are brighter), or null on error
+ * \param[in]    pixs 8 bpp; no colormap
+ * \param[in]    orientflag L_HORIZONTAL_EDGES, L_VERTICAL_EDGES
+ * \return  pixd 8 bpp, edges are brighter, or NULL on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) For detecting vertical edges, this considers the
  *          difference of the central pixel from those on the left
  *          and right.  For situations where the gradient is the same
@@ -188,6 +193,7 @@ PIX       *pixt, *pixd;
  *      (3) This runs at about 60 Mpix/sec on a 3 GHz processor.
  *          It is about 30% faster than Sobel, and the results are
  *          similar.
+ * </pre>
  */
 PIX *
 pixTwoSidedEdgeFilter(PIX     *pixs,
@@ -265,37 +271,39 @@ PIX       *pixd;
  *                   Measurement of edge smoothness                     *
  *----------------------------------------------------------------------*/
 /*!
- *  pixMeasureEdgeSmoothness()
+ * \brief   pixMeasureEdgeSmoothness()
  *
- *      Input:  pixs (1 bpp)
- *              side (L_FROM_LEFT, L_FROM_RIGHT, L_FROM_TOP, L_FROM_BOTTOM)
- *              minjump (minimum jump to be counted; >= 1)
- *              minreversal (minimum reversal size for new peak or valley)
- *              &jpl (<optional return> jumps/length: number of jumps,
- *                    normalized to length of component side)
- *              &jspl (<optional return> jumpsum/length: sum of all
+ * \param[in]    pixs 1 bpp
+ * \param[in]    side L_FROM_LEFT, L_FROM_RIGHT, L_FROM_TOP, L_FROM_BOT
+ * \param[in]    minjump minimum jump to be counted; >= 1
+ * \param[in]    minreversal minimum reversal size for new peak or valley
+ * \param[out]   pjpl [optional] jumps/length: number of jumps,
+ *                    normalized to length of component side
+ * \param[out]   pjspl [optional] jumpsum/length: sum of all
  *                     sufficiently large jumps, normalized to length
- *                     of component side)
- *              &rpl (<optional return> reversals/length: number of
+ *                     of component side
+ * \param[out]   prpl [optional] reversals/length: number of
  *                    peak-to-valley or valley-to-peak reversals,
- *                    normalized to length of component side)
- *              debugfile (<optional> displays constructed edge; use NULL
- *                         for no output)
- *      Return: 0 if OK, 1 on error
+ *                    normalized to length of component side
+ * \param[in]    debugfile [optional] displays constructed edge; use NULL
+ *                         for no output
+ * \return  0 if OK, 1 on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) This computes three measures of smoothness of the edge of a
  *          connected component:
- *            * jumps/length: (jpl) the number of jumps of size >= @minjump,
+ *            * jumps/length: (jpl) the number of jumps of size \>= %minjump,
  *              normalized to the length of the side
  *            * jump sum/length: (jspl) the sum of all jump lengths of
- *              size >= @minjump, normalized to the length of the side
- *            * reversals/length: (rpl) the number of peak <--> valley
- *              reversals, using @minreverse as a minimum deviation of
- *              the peak or valley from its preceeding extremum,
+ *              size \>= %minjump, normalized to the length of the side
+ *            * reversals/length: (rpl) the number of peak \<--\> valley
+ *              reversals, using %minreverse as a minimum deviation of
+ *              the peak or valley from its preceding extremum,
  *              normalized to the length of the side
  *      (2) The input pix should be a single connected component, but
  *          this is not required.
+ * </pre>
  */
 l_int32
 pixMeasureEdgeSmoothness(PIX         *pixs,
@@ -320,7 +328,7 @@ NUMA    *na, *nae;
     if (!pixs || pixGetDepth(pixs) != 1)
         return ERROR_INT("pixs not defined or not 1 bpp", procName, 1);
     if (side != L_FROM_LEFT && side != L_FROM_RIGHT &&
-        side != L_FROM_TOP && side != L_FROM_BOTTOM)
+        side != L_FROM_TOP && side != L_FROM_BOT)
         return ERROR_INT("invalid side", procName, 1);
     if (minjump < 1)
         return ERROR_INT("invalid minjump; must be >= 1", procName, 1);
@@ -354,7 +362,7 @@ NUMA    *na, *nae;
     }
 
     if (prpl) {
-        nae = numaFindExtrema(na, minreversal);
+        nae = numaFindExtrema(na, minreversal, NULL);
         nreversal = numaGetCount(nae) - 1;
         *prpl = (l_float32)nreversal / (l_float32)(n - 1);
         numaDestroy(&nae);
@@ -366,20 +374,20 @@ NUMA    *na, *nae;
 
 
 /*!
- *  pixGetEdgeProfile()
+ * \brief   pixGetEdgeProfile()
  *
- *      Input:  pixs (1 bpp)
- *              side (L_FROM_LEFT, L_FROM_RIGHT, L_FROM_TOP, L_FROM_BOTTOM)
- *              debugfile (<optional> displays constructed edge; use NULL
- *                         for no output)
- *      Return: na (of fg edge pixel locations), or null on error
+ * \param[in]    pixs 1 bpp
+ * \param[in]    side L_FROM_LEFT, L_FROM_RIGHT, L_FROM_TOP, L_FROM_BOT
+ * \param[in]    debugfile [optional] displays constructed edge; use NULL
+ *                         for no output
+ * \return  na of fg edge pixel locations, or NULL on error
  */
 NUMA *
 pixGetEdgeProfile(PIX         *pixs,
                   l_int32      side,
                   const char  *debugfile)
 {
-l_int32   x, y, w, h, loc, n, index, ival;
+l_int32   x, y, w, h, loc, index, ival;
 l_uint32  val;
 NUMA     *na;
 PIX      *pixt;
@@ -390,7 +398,7 @@ PIXCMAP  *cmap;
     if (!pixs || pixGetDepth(pixs) != 1)
         return (NUMA *)ERROR_PTR("pixs undefined or not 1 bpp", procName, NULL);
     if (side != L_FROM_LEFT && side != L_FROM_RIGHT &&
-        side != L_FROM_TOP && side != L_FROM_BOTTOM)
+        side != L_FROM_TOP && side != L_FROM_BOT)
         return (NUMA *)ERROR_PTR("invalid side", procName, NULL);
 
     pixGetDimensions(pixs, &w, &h, NULL);
@@ -404,9 +412,9 @@ PIXCMAP  *cmap;
         numaAddNumber(na, loc);
         for (y = 1; y < h; y++) {
             pixGetPixel(pixs, loc, y, &val);
-            if (val == 1)
+            if (val == 1) {
                 pixGetLastOnPixelInRun(pixs, loc, y, L_FROM_RIGHT, &loc);
-            else {
+            } else {
                 pixGetLastOffPixelInRun(pixs, loc, y, L_FROM_LEFT, &loc);
                 loc = (loc == w - 1) ? 0 : loc + 1;
             }
@@ -419,9 +427,9 @@ PIXCMAP  *cmap;
         numaAddNumber(na, loc);
         for (y = 1; y < h; y++) {
             pixGetPixel(pixs, loc, y, &val);
-            if (val == 1)
+            if (val == 1) {
                 pixGetLastOnPixelInRun(pixs, loc, y, L_FROM_LEFT, &loc);
-            else {
+            } else {
                 pixGetLastOffPixelInRun(pixs, loc, y, L_FROM_RIGHT, &loc);
                 loc = (loc == 0) ? w - 1 : loc - 1;
             }
@@ -434,25 +442,25 @@ PIXCMAP  *cmap;
         numaAddNumber(na, loc);
         for (x = 1; x < w; x++) {
             pixGetPixel(pixs, x, loc, &val);
-            if (val == 1)
-                pixGetLastOnPixelInRun(pixs, x, loc, L_FROM_BOTTOM, &loc);
-            else {
+            if (val == 1) {
+                pixGetLastOnPixelInRun(pixs, x, loc, L_FROM_BOT, &loc);
+            } else {
                 pixGetLastOffPixelInRun(pixs, x, loc, L_FROM_TOP, &loc);
                 loc = (loc == h - 1) ? 0 : loc + 1;
             }
             numaAddNumber(na, loc);
         }
     }
-    else {  /* side == L_FROM_BOTTOM */
-        pixGetLastOffPixelInRun(pixs, 0, h - 1, L_FROM_BOTTOM, &loc);
+    else {  /* side == L_FROM_BOT */
+        pixGetLastOffPixelInRun(pixs, 0, h - 1, L_FROM_BOT, &loc);
         loc = (loc == 0) ? h - 1 : loc - 1;  /* back to the bottom edge */
         numaAddNumber(na, loc);
         for (x = 1; x < w; x++) {
             pixGetPixel(pixs, x, loc, &val);
-            if (val == 1)
+            if (val == 1) {
                 pixGetLastOnPixelInRun(pixs, x, loc, L_FROM_TOP, &loc);
-            else {
-                pixGetLastOffPixelInRun(pixs, x, loc, L_FROM_BOTTOM, &loc);
+            } else {
+                pixGetLastOffPixelInRun(pixs, x, loc, L_FROM_BOT, &loc);
                 loc = (loc == 0) ? h - 1 : loc - 1;
             }
             numaAddNumber(na, loc);
@@ -464,13 +472,12 @@ PIXCMAP  *cmap;
         cmap = pixGetColormap(pixt);
         pixcmapAddColor(cmap, 255, 0, 0);
         index = pixcmapGetCount(cmap) - 1;
-        n = numaGetCount(na);
         if (side == L_FROM_LEFT || side == L_FROM_RIGHT) {
             for (y = 0; y < h; y++) {
                 numaGetIValue(na, y, &ival);
                 pixSetPixel(pixt, ival, y, index);
             }
-        } else {  /* L_FROM_TOP or L_FROM_BOTTOM */
+        } else {  /* L_FROM_TOP or L_FROM_BOT */
             for (x = 0; x < w; x++) {
                 numaGetIValue(na, x, &ival);
                 pixSetPixel(pixt, x, ival, index);
@@ -489,10 +496,10 @@ PIXCMAP  *cmap;
  *
  *      Input:  pixs (1 bpp)
  *              x, y (starting location)
- *              direction (L_FROM_LEFT, L_FROM_RIGHT, L_FROM_TOP, L_FROM_BOTTOM)
+ *              direction (L_FROM_LEFT, L_FROM_RIGHT, L_FROM_TOP, L_FROM_BOT)
  *              &loc (<return> location in scan direction coordinate
  *                    of last OFF pixel found)
- *      Return: na (of fg edge pixel locations), or null on error
+ *      Return: na (of fg edge pixel locations), or NULL on error
  *
  *  Notes:
  *      (1) Search starts from the pixel at (x, y), which is OFF.
@@ -522,7 +529,7 @@ l_uint32  val;
     if (!pixs || pixGetDepth(pixs) != 1)
         return ERROR_INT("pixs undefined or not 1 bpp", procName, 1);
     if (direction != L_FROM_LEFT && direction != L_FROM_RIGHT &&
-        direction != L_FROM_TOP && direction != L_FROM_BOTTOM)
+        direction != L_FROM_TOP && direction != L_FROM_BOT)
         return ERROR_INT("invalid side", procName, 1);
 
     pixGetDimensions(pixs, &w, &h, NULL);
@@ -549,7 +556,7 @@ l_uint32  val;
         }
         *ploc = loc - 1;
     }
-    else if (direction == L_FROM_BOTTOM) {
+    else if (direction == L_FROM_BOT) {
         for (loc = y; loc >= 0; loc--) {
             pixGetPixel(pixs, x, loc, &val);
             if (val == 1)
@@ -566,10 +573,10 @@ l_uint32  val;
  *
  *      Input:  pixs (1 bpp)
  *              x, y (starting location)
- *              direction (L_FROM_LEFT, L_FROM_RIGHT, L_FROM_TOP, L_FROM_BOTTOM)
+ *              direction (L_FROM_LEFT, L_FROM_RIGHT, L_FROM_TOP, L_FROM_BOT)
  *              &loc (<return> location in scan direction coordinate
  *                    of first ON pixel found)
- *      Return: na (of fg edge pixel locations), or null on error
+ *      Return: na (of fg edge pixel locations), or NULL on error
  *
  *  Notes:
  *      (1) Search starts from the pixel at (x, y), which is ON.
@@ -594,7 +601,7 @@ l_uint32  val;
     if (!pixs || pixGetDepth(pixs) != 1)
         return ERROR_INT("pixs undefined or not 1 bpp", procName, 1);
     if (direction != L_FROM_LEFT && direction != L_FROM_RIGHT &&
-        direction != L_FROM_TOP && direction != L_FROM_BOTTOM)
+        direction != L_FROM_TOP && direction != L_FROM_BOT)
         return ERROR_INT("invalid side", procName, 1);
 
     pixGetDimensions(pixs, &w, &h, NULL);
@@ -621,7 +628,7 @@ l_uint32  val;
         }
         *ploc = loc - 1;
     }
-    else if (direction == L_FROM_BOTTOM) {
+    else if (direction == L_FROM_BOT) {
         for (loc = y; loc >= 0; loc--) {
             pixGetPixel(pixs, x, loc, &val);
             if (val == 0)

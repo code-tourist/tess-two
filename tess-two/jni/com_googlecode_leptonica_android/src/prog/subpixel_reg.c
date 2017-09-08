@@ -43,8 +43,8 @@ const char  *textstr[] =
             "Subpixel scaling; vert R-G-B",
             "Subpixel scaling; vert B-G-R"};
 
-main(int    argc,
-     char **argv)
+int main(int    argc,
+         char **argv)
 {
 l_float32     scalefact;
 L_BMF        *bmf, *bmftop;
@@ -61,7 +61,7 @@ L_REGPARAMS  *rp;
     pixa = pixaCreate(5);
     bmf = bmfCreate("./fonts", 6);
     bmftop = bmfCreate("./fonts", 10);
-    pixs = pixRead("lucasta-47.jpg");
+    pixs = pixRead("lucasta.047.jpg");
     pixg = pixScale(pixs, 0.4, 0.4);  /* 8 bpp grayscale */
     pix1 = pixConvertTo32(pixg);  /* 32 bpp rgb */
     AddTextAndSave(pixa, pix1, 1, bmf, textstr[0], L_ADD_BELOW, 0xff000000);
@@ -195,7 +195,7 @@ PIX     *pixt;
 
     pixt = pixAddSingleTextblock(pixs, bmf, textstr, val, location, &ovf);
     n = pixaGetCount(pixa);
-    pixSaveTiledOutline(pixt, pixa, 1, newrow, 30, 2, 32);
+    pixSaveTiledOutline(pixt, pixa, 1.0, newrow, 30, 2, 32);
     if (ovf) fprintf(stderr, "Overflow writing text in image %d\n", n + 1);
     pixDestroy(&pixt);
     return;

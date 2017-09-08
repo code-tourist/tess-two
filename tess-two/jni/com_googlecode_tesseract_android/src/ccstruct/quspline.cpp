@@ -1,8 +1,8 @@
 /**********************************************************************
  * File:        quspline.cpp  (Formerly qspline.c)
  * Description: Code for the QSPLINE class.
- * Author:	Ray Smith
- * Created:	Tue Oct 08 17:16:12 BST 1991
+ * Author:  Ray Smith
+ * Created: Tue Oct 08 17:16:12 BST 1991
  *
  * (C) Copyright 1991, Hewlett-Packard Ltd.
  ** Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,10 @@
  *
  **********************************************************************/
 
-#include "mfcpch.h"
-#include          "memry.h"
-#include          "quadlsq.h"
-#include          "quspline.h"
+#include "allheaders.h"
+#include "memry.h"
+#include "quadlsq.h"
+#include "quspline.h"
 
 // Include automatically generated configuration file if running autoconf.
 #ifdef HAVE_CONFIG_H
@@ -71,8 +71,8 @@ int xpts[],                      //points to fit
 int ypts[], int pointcount,      //no of pts
 int degree                       //fit required
 ) {
-  register int pointindex;       /*no along text line */
-  register int segment;          /*segment no */
+  int pointindex;                /*no along text line */
+  int segment;                   /*segment no */
   inT32 *ptcounts;               //no in each segment
   QLSQ qlsq;                     /*accumulator */
 
@@ -308,7 +308,7 @@ void QSPLINE::extrapolate(                  //linear extrapolation
                           int xmin,         //new left edge
                           int xmax          //new right edge
                          ) {
-  register int segment;          /*current segment of spline */
+  int segment;                   /*current segment of spline */
   int dest_segment;              //dest index
   int *xstarts;                  //new boundaries
   QUAD_COEFFS *quads;            //new ones
@@ -385,3 +385,41 @@ void QSPLINE::plot(                //draw it
   }
 }
 #endif
+
+void QSPLINE::plot(Pix *pix) const {
+  if (pix == NULL) {
+    return;
+  }
+
+  inT32 segment;  // Index of segment
+  inT16 step;  // Index of poly piece
+  double increment;  // x increment
+  double x;  // x coord
+  double height = static_cast<double>(pixGetHeight(pix));
+  Pta* points = ptaCreate(QSPLINE_PRECISION * segments);
+  const int kLineWidth = 5;
+
+  for (segment = 0; segment < segments; segment++) {
+    increment = static_cast<double>((xcoords[segment + 1] -
+        xcoords[segment])) / QSPLINE_PRECISION;
+    x = xcoords[segment];
+    for (step = 0; step <= QSPLINE_PRECISION; step++) {
+      double y = height - quadratics[segment].y(x);
+      ptaAddPt(points, x, y);
+      x += increment;
+    }
+  }
+
+  switch (pixGetDepth(pix)) {
+    case 1:
+      pixRenderPolyline(pix, points, kLineWidth, L_SET_PIXELS, 1);
+      break;
+    case 32:
+      pixRenderPolylineArb(pix, points, kLineWidth, 255, 0, 0, 1);
+      break;
+    default:
+      pixRenderPolyline(pix, points, kLineWidth, L_CLEAR_PIXELS, 1);
+      break;
+  }
+  ptaDestroy(&points);
+}

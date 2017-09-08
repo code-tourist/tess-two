@@ -56,7 +56,7 @@ rm -f testing/reports/$setname.times
 while read page dir
 do
   # A pages file may be a list of files with subdirs or maybe just
-  # a plain list of files so accomodate both.
+  # a plain list of files so accommodate both.
   if [ "$dir" ]
   then
      srcdir="$imdir/$dir"
@@ -64,7 +64,7 @@ do
      srcdir="$imdir"
   fi
 #  echo "$srcdir/$page.tif"
-  $tess $srcdir/$page.tif $resdir/$page -psm 6 $config 2>&1 |grep -v "OCR Engine"
+  $tess $srcdir/$page.tif $resdir/$page --psm 6 $config 2>&1 |grep -v "OCR Engine"
   if [ -r times.txt ]
   then
     read t <times.txt

@@ -26,78 +26,68 @@
 
 /*
  * gammatest.c
- *
  */
 
 #include <math.h>
 #include "allheaders.h"
 
-#define  NPLOTS      5
 #define  MINVAL      30
 #define  MAXVAL      210
 
-main(int    argc,
-     char **argv)
+int main(int    argc,
+         char **argv)
 {
 char        *filein, *fileout;
 char         bigbuf[512];
-l_int32      iplot;
+l_int32      iplot, same;
 l_float32    gam;
-l_float64    gamma[NPLOTS] = {.5, 1.0, 1.5, 2.0, 2.5};
+l_float64    gamma[] = {.5, 1.0, 1.5, 2.0, 2.5, -1.0};
 GPLOT       *gplot;
 NUMA        *na, *nax;
 PIX         *pixs, *pixd;
 static char  mainName[] = "gammatest";
 
     if (argc != 4)
-	exit(ERROR_INT(" Syntax:  gammatest filein gam fileout", mainName, 1));
+        return ERROR_INT(" Syntax:  gammatest filein gam fileout", mainName, 1);
+
+    lept_mkdir("lept/gamma");
 
     filein = argv[1];
     gam = atof(argv[2]);
     fileout = argv[3];
-
     if ((pixs = pixRead(filein)) == NULL)
-	exit(ERROR_INT("pixs not made", mainName, 1));
+        return ERROR_INT("pixs not made", mainName, 1);
 
-#if 1
-    startTimer();
-    pixGammaTRC(pixs, pixs, gam, MINVAL, MAXVAL);
-    fprintf(stderr, "Time for gamma: %7.3f sec\n", stopTimer());
-    pixWrite(fileout, pixs, IFF_JFIF_JPEG);
-    pixDestroy(&pixs);
-#endif
-
-#if 0
     startTimer();
     pixd = pixGammaTRC(NULL, pixs, gam, MINVAL, MAXVAL);
     fprintf(stderr, "Time for gamma: %7.3f sec\n", stopTimer());
-    pixWrite(fileout, pixd, IFF_JFIF_JPEG);
+    pixGammaTRC(pixs, pixs, gam, MINVAL, MAXVAL);
+    pixEqual(pixs, pixd, &same);
+    if (!same)
+        fprintf(stderr, "Error in pixGammaTRC!\n");
+    pixWrite(fileout, pixs, IFF_JFIF_JPEG);
     pixDestroy(&pixs);
-    pixDestroy(&pixd);
-#endif
 
     na = numaGammaTRC(gam, MINVAL, MAXVAL);
-    gplotSimple1(na, GPLOT_X11, "/tmp/junkroot", "gamma trc");
+    gplotSimple1(na, GPLOT_PNG, "/tmp/lept/gamma/trc", "gamma trc");
+    l_fileDisplay("/tmp/lept/gamma/trc.png", 100, 100, 1.0);
     numaDestroy(&na);
 
-#if 1     /* plot gamma TRC maps */
-    gplot = gplotCreate("/tmp/junkmap", GPLOT_X11,
+        /* Plot gamma TRC maps */
+    gplot = gplotCreate("/tmp/lept/gamma/corr", GPLOT_PNG,
                         "Mapping function for gamma correction",
-		       	"value in", "value out");
+                        "value in", "value out");
     nax = numaMakeSequence(0.0, 1.0, 256);
-    for (iplot = 0; iplot < NPLOTS; iplot++) {
+    for (iplot = 0; gamma[iplot] >= 0.0; iplot++) {
         na = numaGammaTRC(gamma[iplot], 30, 215);
-	sprintf(bigbuf, "gamma = %3.1f", gamma[iplot]);
+        sprintf(bigbuf, "gamma = %3.1f", gamma[iplot]);
         gplotAddPlot(gplot, nax, na, GPLOT_LINES, bigbuf);
-	numaDestroy(&na);
+        numaDestroy(&na);
     }
     gplotMakeOutput(gplot);
     gplotDestroy(&gplot);
+    l_fileDisplay("/tmp/lept/gamma/corr.png", 100, 100, 1.0);
     numaDestroy(&nax);
-#endif
-
     return 0;
 }
-
-
 

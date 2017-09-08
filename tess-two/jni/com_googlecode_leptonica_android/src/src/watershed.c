@@ -24,8 +24,9 @@
  -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
-/*
- *  watershed.c
+/*!
+ * \file watershed.c
+ * <pre>
  *
  *      Top-level
  *            L_WSHED         *wshedCreate()
@@ -92,22 +93,23 @@
  *         (f) One parent is a filler and the other is derived from a
  *             minima: merge the minima into the filler.
  *    (6) The output of the watershed operation consists of:
- *         - a pixa of the basins
- *         - a pta of the markers
- *         - a numa of the watershed levels
+ *         ~ a pixa of the basins
+ *         ~ a pta of the markers
+ *         ~ a numa of the watershed levels
  *
  *  Typical usage:
  *      L_WShed *wshed = wshedCreate(pixs, pixseed, mindepth, 0);
  *      wshedApply(wshed);
 *
- *      wshedBasins(wshed, &pixa, &nalevels);
+ *      wshedBasins(wshed, \&pixa, \&nalevels);
  *        ... do something with pixa, nalevels ...
- *      pixaDestroy(&pixa);
- *      numaDestroy(&nalevels);
+ *      pixaDestroy(\&pixa);
+ *      numaDestroy(\&nalevels);
  *
  *      Pix *pixd = wshedRenderFill(wshed);
  *
- *      wshedDestroy(&wshed);
+ *      wshedDestroy(\&wshed);
+ * </pre>
  */
 
 #include "allheaders.h"
@@ -118,19 +120,21 @@
 
 static const l_uint32  MAX_LABEL_VALUE = 0x7fffffff;  /* largest l_int32 */
 
+/*! New pixel coordinates */
 struct L_NewPixel
 {
-    l_int32    x;
-    l_int32    y;
+    l_int32    x;      /*!< x coordinate */
+    l_int32    y;      /*!< y coordinate */
 };
 typedef struct L_NewPixel  L_NEWPIXEL;
 
+/*! Wartshed pixel */
 struct L_WSPixel
 {
-    l_float32  val;    /* pixel value */
-    l_int32    x;
-    l_int32    y;
-    l_int32    index;  /* label for set to which pixel belongs */
+    l_float32  val;    /*!< pixel value */
+    l_int32    x;      /*!< x coordinate */
+    l_int32    y;      /*!< y coordinate */
+    l_int32    index;  /*!< label for set to which pixel belongs */
 };
 typedef struct L_WSPixel  L_WSPIXEL;
 
@@ -173,15 +177,16 @@ static void debugWshedMerge(L_WSHED *wshed, char *descr, l_int32 x,
  *                        Top-level watershed                            *
  *-----------------------------------------------------------------------*/
 /*!
- *  wshedCreate()
+ * \brief   wshedCreate()
  *
- *      Input:  pixs  (8 bpp source)
- *              pixm  (1 bpp 'marker' seed)
- *              mindepth (minimum depth; anything less is not saved)
- *              debugflag (1 for debug output)
- *      Return: WShed, or null on error
+ * \param[in]    pixs  8 bpp source
+ * \param[in]    pixm  1 bpp 'marker' seed
+ * \param[in]    mindepth minimum depth; anything less is not saved
+ * \param[in]    debugflag 1 for debug output
+ * \return  WShed, or NULL on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) It is not necessary for the fg pixels in the seed image
  *          be at minima, or that they be isolated.  We extract a
  *          single pixel from each connected component, and a seed
@@ -192,6 +197,7 @@ static void debugWshedMerge(L_WSHED *wshed, char *descr, l_int32 x,
  *          than mindepth, even if it has a seed, will not be saved;
  *          It will either be incorporated in another watershed or
  *          eliminated.
+ * </pre>
  */
 L_WSHED *
 wshedCreate(PIX     *pixs,
@@ -216,7 +222,7 @@ L_WSHED  *wshed;
     if (pixGetWidth(pixm) != w || pixGetHeight(pixm) != h)
         return (L_WSHED *)ERROR_PTR("pixs/m sizes are unequal", procName, NULL);
 
-    if ((wshed = (L_WSHED *)CALLOC(1, sizeof(L_WSHED))) == NULL)
+    if ((wshed = (L_WSHED *)LEPT_CALLOC(1, sizeof(L_WSHED))) == NULL)
         return (L_WSHED *)ERROR_PTR("wshed not made", procName, NULL);
 
     wshed->pixs = pixClone(pixs);
@@ -235,10 +241,10 @@ L_WSHED  *wshed;
 
 
 /*!
- *  wshedDestroy()
+ * \brief   wshedDestroy()
  *
- *      Input:  &wshed (<will be set to null before returning>)
- *      Return: void
+ * \param[in,out]   pwshed will be set to null before returning
+ * \return  void
  */
 void
 wshedDestroy(L_WSHED  **pwshed)
@@ -249,7 +255,7 @@ L_WSHED  *wshed;
     PROCNAME("wshedDestroy");
 
     if (pwshed == NULL) {
-        L_WARNING("ptr address is null!", procName);
+        L_WARNING("ptr address is null!\n", procName);
         return;
     }
 
@@ -260,10 +266,10 @@ L_WSHED  *wshed;
     pixDestroy(&wshed->pixm);
     pixDestroy(&wshed->pixlab);
     pixDestroy(&wshed->pixt);
-    if (wshed->lines8) FREE(wshed->lines8);
-    if (wshed->linem1) FREE(wshed->linem1);
-    if (wshed->linelab32) FREE(wshed->linelab32);
-    if (wshed->linet1) FREE(wshed->linet1);
+    if (wshed->lines8) LEPT_FREE(wshed->lines8);
+    if (wshed->linem1) LEPT_FREE(wshed->linem1);
+    if (wshed->linelab32) LEPT_FREE(wshed->linelab32);
+    if (wshed->linet1) LEPT_FREE(wshed->linet1);
     pixaDestroy(&wshed->pixad);
     ptaDestroy(&wshed->ptas);
     numaDestroy(&wshed->nash);
@@ -271,26 +277,26 @@ L_WSHED  *wshed;
     numaDestroy(&wshed->namh);
     numaDestroy(&wshed->nalevels);
     if (wshed->lut)
-         FREE(wshed->lut);
+         LEPT_FREE(wshed->lut);
     if (wshed->links) {
         for (i = 0; i < wshed->arraysize; i++)
             numaDestroy(&wshed->links[i]);
-        FREE(wshed->links);
+        LEPT_FREE(wshed->links);
     }
-    FREE(wshed);
+    LEPT_FREE(wshed);
     *pwshed = NULL;
     return;
 }
 
 
 /*!
- *  wshedApply()
+ * \brief   wshedApply()
  *
- *      Input:  wshed (generated from wshedCreate())
- *      Return: 0 if OK, 1 on error
+ * \param[in]    wshed generated from wshedCreate()
+ * \return  0 if OK, 1 on error
  *
  *  Iportant note:
- *      (1) This is buggy.  It seems to locate watersheds that are
+ *      1 This is buggy.  It seems to locate watersheds that are
  *          duplicates.  The watershed extraction after complete fill
  *          grabs some regions belonging to existing watersheds.
  *          See prog/watershedtest.c for testing.
@@ -337,7 +343,7 @@ PTA      *ptas, *ptao;
     linelab32 = wshed->linelab32;  /* ditto */
 
         /* Identify seed (marker) pixels, 1 for each c.c. in pixm */
-    ptas = pixSelectMinInConnComp(wshed->pixs, wshed->pixm, &nash);
+    pixSelectMinInConnComp(wshed->pixs, wshed->pixm, &ptas, &nash);
     pixsd = pixGenerateFromPta(ptas, w, h);
     nseeds = ptaGetCount(ptas);
     for (i = 0; i < nseeds; i++) {
@@ -360,7 +366,7 @@ PTA      *ptas, *ptao;
          *      to a single pixel.  */
     pixLocalExtrema(wshed->pixs, 200, 0, &pixmin, NULL);
     pixRemoveSeededComponents(pixmin, pixsd, pixmin, 8, 2);
-    ptao = pixSelectMinInConnComp(wshed->pixs, pixmin, &namh);
+    pixSelectMinInConnComp(wshed->pixs, pixmin, &ptao, &namh);
     nother = ptaGetCount(ptao);
     for (i = 0; i < nother; i++) {
         ptaGetIPt(ptao, i, &x, &y);
@@ -383,7 +389,7 @@ PTA      *ptas, *ptao;
     nalut = numaMakeSequence(0, 1, arraysize);
     lut = numaGetIArray(nalut);
     wshed->lut = lut;  /* wshed owns this */
-    links = (NUMA **)CALLOC(arraysize, sizeof(NUMA *));
+    links = (NUMA **)LEPT_CALLOC(arraysize, sizeof(NUMA *));
     wshed->links = links;  /* wshed owns this */
     nindex = nseeds + nother;  /* the next unused index value */
 
@@ -395,7 +401,7 @@ PTA      *ptas, *ptao;
     wshed->pixad = pixad;  /* wshed owns this */
     nalevels = numaCreate(nseeds);
     wshed->nalevels = nalevels;  /* wshed owns this */
-    L_INFO_INT2("nseeds = %d, nother = %d\n", procName, nseeds, nother);
+    L_INFO("nseeds = %d, nother = %d\n", procName, nseeds, nother);
     while (lheapGetCount(lh) > 0) {
         popWSPixel(lh, rstack, &val, &x, &y, &index);
 /*        fprintf(stderr, "x = %d, y = %d, index = %d\n", x, y, index); */
@@ -420,8 +426,7 @@ PTA      *ptas, *ptao;
                     pushWSPixel(lh, rstack, (l_int32)uval, j, i, cindex);
                 }
             }
-        }
-        else {  /* this pixel is already labeled (differently); must resolve */
+        } else {  /* pixel is already labeled (differently); must resolve */
 
                 /* If both indices are seeds, check if the min height is
                  * greater than mindepth.  If so, we have two new watersheds;
@@ -461,49 +466,42 @@ PTA      *ptas, *ptao;
                     mergeLookup(wshed, cindex, nindex);
                     debugPrintLUT(lut, nindex, wshed->debug);
                     nindex++;
-                }
-                else  /* extraneous seed within seeded basin; absorb */
+                } else  /* extraneous seed within seeded basin; absorb */ {
                     debugWshedMerge(wshed, seed_absorbed_into_seeded_basin,
                                     x, y, clabel, cindex);
-                    maxhindex = clabel;
-                    minhindex = cindex;
-                    if (hindex > hlabel) {
-                        maxhindex = cindex;
-                        minhindex = clabel;
-                    }
-                    mergeLookup(wshed, minhindex, maxhindex);
-            }
-
+                }
+                maxhindex = clabel;  /* TODO: is this part of above 'else'? */
+                minhindex = cindex;
+                if (hindex > hlabel) {
+                    maxhindex = cindex;
+                    minhindex = clabel;
+                }
+                mergeLookup(wshed, minhindex, maxhindex);
+            } else if (clabel < nseeds && cindex >= nboth) {
                 /* If one index is a seed and the other is a merge of
                  * 2 watersheds, generate a single watershed. */
-            else if (clabel < nseeds && cindex >= nboth) {
                 debugWshedMerge(wshed, one_new_watershed_label,
                                 x, y, clabel, cindex);
                 wshedSaveBasin(wshed, clabel, val - 1);
                 numaSetValue(nasi, clabel, 0);
                 mergeLookup(wshed, clabel, cindex);
-            }
-            else if (cindex < nseeds && clabel >= nboth) {
+            } else if (cindex < nseeds && clabel >= nboth) {
                 debugWshedMerge(wshed, one_new_watershed_index,
                                 x, y, clabel, cindex);
                 wshedSaveBasin(wshed, cindex, val - 1);
                 numaSetValue(nasi, cindex, 0);
                 mergeLookup(wshed, cindex, clabel);
-            }
+            } else if (clabel < nseeds) {  /* cindex from minima; absorb */
                 /* If one index is a seed and the other is from a minimum,
                  * merge the minimum wshed into the seed wshed. */
-            else if (clabel < nseeds) {  /* cindex from minima; absorb */
                 debugWshedMerge(wshed, minima_absorbed_into_seeded_basin,
                                 x, y, clabel, cindex);
                 mergeLookup(wshed, cindex, clabel);
-            }
-            else if (cindex < nseeds) {  /* clabel from minima; absorb */
+            } else if (cindex < nseeds) {  /* clabel from minima; absorb */
                 debugWshedMerge(wshed, minima_absorbed_into_seeded_basin,
                                 x, y, clabel, cindex);
                 mergeLookup(wshed, clabel, cindex);
-            }
-                /* If neither index is a seed, just merge */
-            else {
+            } else {  /* If neither index is a seed, just merge */
                 debugWshedMerge(wshed, minima_absorbed_by_filler_or_another,
                                 x, y, clabel, cindex);
                 mergeLookup(wshed, clabel, cindex);
@@ -537,18 +535,20 @@ PTA      *ptas, *ptao;
  *                               Helpers                                 *
  *-----------------------------------------------------------------------*/
 /*!
- *  wshedSaveBasin()
+ * \brief   wshedSaveBasin()
  *
- *      Input:  wshed
- *              index (index of basin to be located)
- *              level (filling level reached at the time this function
- *                     is called)
- *      Return: 0 if OK, 1 on error
+ * \param[in]    wshed
+ * \param[in]    index index of basin to be located
+ * \param[in]    level filling level reached at the time this function
+ *                     is called
+ * \return  0 if OK, 1 on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) This identifies a single watershed.  It does not change
  *          the LUT, which must be done subsequently.
- *      (2) The fill level of a basin is taken to be @level - 1.
+ *      (2) The fill level of a basin is taken to be %level - 1.
+ * </pre>
  */
 static void
 wshedSaveBasin(L_WSHED  *wshed,
@@ -561,7 +561,7 @@ PIX  *pix;
     PROCNAME("wshedSaveBasin");
 
     if (!wshed) {
-        L_ERROR("wshed not defined", procName);
+        L_ERROR("wshed not defined\n", procName);
         return;
     }
 
@@ -575,23 +575,25 @@ PIX  *pix;
 
 
 /*!
- *  identifyWatershedBasin()
+ * \brief   identifyWatershedBasin()
  *
- *      Input:  wshed
- *              index (index of basin to be located)
- *              level (of basin at point at which the two basins met)
- *              &box (<return> bounding box of basin)
- *              &pixd (<return> pix of basin, cropped to its bounding box)
- *      Return: 0 if OK, 1 on error
+ * \param[in]    wshed
+ * \param[in]    index index of basin to be located
+ * \param[in]    level of basin at point at which the two basins met
+ * \param[out]   pbox bounding box of basin
+ * \param[out]   ppixd pix of basin, cropped to its bounding box
+ * \return  0 if OK, 1 on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) This is a static function, so we assume pixlab, pixs and pixt
  *          exist and are the same size.
- *      (2) It selects all pixels that have the label @index in pixlab
- *          and that have a value in pixs that is less than @level.
+ *      (2) It selects all pixels that have the label %index in pixlab
+ *          and that have a value in pixs that is less than %level.
  *      (3) It is used whenever two seeded basins meet (typically at a saddle),
  *          or when one seeded basin meets a 'filler'.  All identified
  *          basins are saved as a watershed.
+ * </pre>
  */
 static l_int32
 identifyWatershedBasin(L_WSHED  *wshed,
@@ -606,7 +608,7 @@ l_int32  *lut;
 l_uint32  label, bval, lval;
 void    **lines8, **linelab32, **linet1;
 BOX      *box;
-PIX      *pixs, *pixlab, *pixt, *pixd;
+PIX      *pixs, *pixt, *pixd;
 L_QUEUE  *lq;
 
     PROCNAME("identifyWatershedBasin");
@@ -625,7 +627,6 @@ L_QUEUE  *lq;
     lq->stack = lstackCreate(0);
 
     pixs = wshed->pixs;
-    pixlab = wshed->pixlab;
     pixt = wshed->pixt;
     lines8 = wshed->lines8;
     linelab32 = wshed->linelab32;
@@ -644,8 +645,8 @@ L_QUEUE  *lq;
         /* Each pixel in a spreading breadth-first search is inspected.
          * It is accepted as part of this watershed, and pushed on
          * the search queue, if:
-         *     (1) It has a label value equal to @index
-         *     (2) The pixel value is less than @level, the overflow
+         *     (1) It has a label value equal to %index
+         *     (2) The pixel value is less than %level, the overflow
          *         height at which the two basins join.
          *     (3) It has not yet been seen in this search.  */
     while (lqueueGetCount(lq) > 0) {
@@ -684,14 +685,15 @@ L_QUEUE  *lq;
 
 
 /*!
- *  mergeLookup()
+ * \brief   mergeLookup()
  *
- *      Input:  wshed
- *              sindex (primary index being changed in the merge)
- *              dindex (index that @sindex will point to after the merge)
- *      Return: 0 if OK, 1 on error
+ * \param[in]    wshed
+ * \param[in]    sindex primary index being changed in the merge
+ * \param[in]    dindex index that %sindex will point to after the merge
+ * \return  0 if OK, 1 on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) The links are a sparse array of Numas showing current back-links.
  *          The lut gives the current index (of the seed or the minima
  *          for the wshed  in which it is located.
@@ -704,6 +706,7 @@ L_QUEUE  *lq;
  *          has all backlinks.  That is, every "redirect" in the lut
  *          points to an "owner".  The lut always gives the index of
  *          the current owner.
+ * </pre>
  */
 static l_int32
 mergeLookup(L_WSHED  *wshed,
@@ -744,7 +747,7 @@ NUMA    **links;
          * to dindex. */
     if (!links[dindex])
         links[dindex] = numaCreate(n);
-    numaJoin(links[dindex], links[sindex], 0, 0);
+    numaJoin(links[dindex], links[sindex], 0, -1);
     numaAddNumber(links[dindex], sindex);
     numaDestroy(&links[sindex]);
 
@@ -753,19 +756,21 @@ NUMA    **links;
 
 
 /*!
- *  wshedGetHeight()
+ * \brief   wshedGetHeight()
  *
- *      Input:  wshed (array of current indices)
- *              val (value of current pixel popped off queue)
- *              label (of pixel or 32 bpp label image)
- *              &height (<return> height of current value from seed
- *                       or minimum of watershed)
- *      Return: 0 if OK, 1 on error
+ * \param[in]    wshed array of current indices
+ * \param[in]    val value of current pixel popped off queue
+ * \param[in]    label of pixel or 32 bpp label image
+ * \param[out]   pheight height of current value from seed
+ *                       or minimum of watershed
+ * \return  0 if OK, 1 on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) It is only necessary to find the height for a watershed
  *          that is indexed by a seed or a minima.  This function should
  *          not be called on a finished watershed (that continues to fill).
+ * </pre>
  */
 static l_int32
 wshedGetHeight(L_WSHED  *wshed,
@@ -822,7 +827,7 @@ L_NEWPIXEL  *np;
     PROCNAME("pushNewPixel");
 
     if (!lq) {
-        L_ERROR(procName, "queue not defined");
+        L_ERROR("queue not defined\n", procName);
         return;
     }
 
@@ -836,7 +841,7 @@ L_NEWPIXEL  *np;
     if (lstackGetCount(lq->stack) > 0)
         np = (L_NEWPIXEL *)lstackRemove(lq->stack);
     else
-        np = (L_NEWPIXEL *)CALLOC(1, sizeof(L_NEWPIXEL));
+        np = (L_NEWPIXEL *)LEPT_CALLOC(1, sizeof(L_NEWPIXEL));
 
     np->x = x;
     np->y = y;
@@ -867,7 +872,7 @@ L_NEWPIXEL  *np;
     PROCNAME("popNewPixel");
 
     if (!lq) {
-        L_ERROR(procName, "lqueue not defined");
+        L_ERROR("lqueue not defined\n", procName);
         return;
     }
 
@@ -907,11 +912,11 @@ L_WSPIXEL  *wsp;
     PROCNAME("pushWSPixel");
 
     if (!lh) {
-        L_ERROR(procName, "heap not defined");
+        L_ERROR("heap not defined\n", procName);
         return;
     }
     if (!stack) {
-        L_ERROR(procName, "stack not defined");
+        L_ERROR("stack not defined\n", procName);
         return;
     }
 
@@ -919,7 +924,7 @@ L_WSPIXEL  *wsp;
     if (lstackGetCount(stack) > 0)
         wsp = (L_WSPIXEL *)lstackRemove(stack);
     else
-        wsp = (L_WSPIXEL *)CALLOC(1, sizeof(L_WSPIXEL));
+        wsp = (L_WSPIXEL *)LEPT_CALLOC(1, sizeof(L_WSPIXEL));
 
     wsp->val = (l_float32)val;
     wsp->x = x;
@@ -958,15 +963,15 @@ L_WSPIXEL  *wsp;
     PROCNAME("popWSPixel");
 
     if (!lh) {
-        L_ERROR(procName, "lheap not defined");
+        L_ERROR("lheap not defined\n", procName);
         return;
     }
     if (!stack) {
-        L_ERROR(procName, "stack not defined");
+        L_ERROR("stack not defined\n", procName);
         return;
     }
     if (!pval || !px || !py || !pindex) {
-        L_ERROR(procName, "data can't be returned");
+        L_ERROR("data can't be returned\n", procName);
         return;
     }
 
@@ -1018,12 +1023,12 @@ debugWshedMerge(L_WSHED *wshed,
  *                                 Output                                *
  *-----------------------------------------------------------------------*/
 /*!
- *  wshedBasins()
+ * \brief   wshedBasins()
  *
- *      Input:  wshed
- *              &pixa  (<optional return> mask of watershed basins)
- *              &nalevels   (<optional return> watershed levels)
- *      Return: 0 if OK, 1 on error
+ * \param[in]    wshed
+ * \param[out]   ppixa  [optional] mask of watershed basins
+ * \param[out]   pnalevels   [optional] watershed levels
+ * \return  0 if OK, 1 on error
  */
 l_int32
 wshedBasins(L_WSHED  *wshed,
@@ -1044,10 +1049,10 @@ wshedBasins(L_WSHED  *wshed,
 
 
 /*!
- *  wshedRenderFill()
+ * \brief   wshedRenderFill()
  *
- *      Input:  wshed
- *      Return: pixd (initial image with all basins filled), or null on error
+ * \param[in]    wshed
+ * \return  pixd initial image with all basins filled, or NULL on error
  */
 PIX *
 wshedRenderFill(L_WSHED  *wshed)
@@ -1080,10 +1085,10 @@ PIXA    *pixa;
 
 
 /*!
- *  wshedRenderColors()
+ * \brief   wshedRenderColors()
  *
- *      Input:  wshed
- *      Return: pixd (initial image with all basins filled), or null on error
+ * \param[in]    wshed
+ * \return  pixd initial image with all basins filled, or NULL on error
  */
 PIX *
 wshedRenderColors(L_WSHED  *wshed)

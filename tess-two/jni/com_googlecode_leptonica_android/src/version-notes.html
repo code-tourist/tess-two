@@ -9,8 +9,75 @@
 </form>
 ----- JS Window Closer -->
 
+<!-- Creative Commons License -->
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/"><img alt="Creative Commons License" border="0" src="http://creativecommons.org/images/public/somerights20.gif" /></a>
+This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/2.5/">Creative Commons Attribution 2.5 License</a>.
+<!-- /Creative Commons License -->
+
+
+<!--
+
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<Work rdf:about="">
+  <dc:title>leptonica</dc:title>
+  <dc:date>2001</dc:date>
+  <dc:description>An open source C library for efficient image processing and image analysis operations</dc:description>
+  <dc:creator><Agent>
+    <dc:title>Dan S. Bloomberg</dc:title>
+  </Agent></dc:creator>
+  <dc:rights><Agent>
+    <dc:title>Dan S. Bloomberg</dc:title>
+  </Agent></dc:rights>
+  <dc:type rdf:resource="http://purl.org/dc/dcmitype/Text" />
+  <dc:source rdf:resource="www.leptonica.com"/>
+  <license rdf:resource="http://creativecommons.org/licenses/by/2.5/" />
+</Work>
+
+<License rdf:about="http://creativecommons.org/licenses/by/2.5/">
+  <permits rdf:resource="http://web.resource.org/cc/Reproduction" />
+  <permits rdf:resource="http://web.resource.org/cc/Distribution" />
+  <requires rdf:resource="http://web.resource.org/cc/Notice" />
+  <requires rdf:resource="http://web.resource.org/cc/Attribution" />
+  <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
+</License>
+
+</rdf:RDF>
+
+-->
+
+<pre>
+/*====================================================================*
+ -  Copyright (C) 2001 Leptonica.  All rights reserved.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ -
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *====================================================================*/
+</pre>
+
 
 <h2 align=center>Version Notes for Leptonica</h2>
+<h3 align=center>25 Jan 2016</h3>
 
 <hr>
 <h2 align=center>  <IMG SRC="moller52.jpg" border=1 ALIGN_MIDDLE> </h2>
@@ -22,7 +89,194 @@ They are <i>not</i> a complete listing of the modifications.
 
 <pre>
 
-1.69   30 Jan 12
+1.74.1  3 Jan 17
+        Configuration changes to support the patch number in the
+        version (major.minor.patch).
+        Removed all remaining pixDisplayWrite() calls in prog/.
+        Cleaned up and/or promoted about 15 programs to full regression
+        tests.  There are now 95 tests in the regression set.
+        Over half the initial coverity scan warnings have been removed.
+
+1.74.0 10 Dec 16
+       Leptonica development was moved to github.  The master is at:
+          github.com/danbloomberg/leptonica
+       Egor Pugin is the maintainer of the site.
+       A very large number of changes have been made.  Some of them follow;
+       details can be found in the git commit messages.
+       Static makefiles modified to work with gnu*9 and c*9.
+       Modify SET macros to work on windows.
+       New modes for RGB --> gray conversion.
+       New functions added for displaying a pix from a pixa.
+       Split out sort/hash/set/map functions for dna, sarray and pta.
+       More robust horizontal deskew on multi-column page images.
+       Improve webpio_reg test.
+       Remove X11 display for gplot; it is no longer supported.
+       Remove most sleep calls, which were put in for gplot; no longer needed.
+       Removed use of gthumb in library.
+       Removed use of pixDisplayWrite() in the library; still in some progs.
+       Improved test for endianness in makefile.static; no longer requires
+       any local files or building and running a program.
+       Modified all files for doxygen output (spearheaded by Jurgen Buchmuller)
+       Improved plotting of the boxes in a boxa.
+       Replaced the slow point hash function with a simple fast one.
+       Added pam (4 component) format writing to pnmio.c (Jurgen Buchmuller)
+       Improved rendering of pixa in side/by/sides.
+       Better utilities for pixa and pixacomp.
+       Add read/write serialization functions from/to memory for all
+       the major data structures that do not already have them.
+       More serialized boot recognizers stored as self-generating code.
+       Cleaned up generating an adapted recognizer from the boot recognizer.
+       Simplified temp file naming; removed most instances of named
+       temp files from non-debug code; use tmpfile() and a wrapper
+       l_makeTempFilename().
+       Simplify and streamline multipage tiff reading (Jeff Breidenbach).
+       Improvement of Otsu thresholding.
+       Recognize outstanding contributors to leptonica over the years.
+       New gif mem read/write interface that avoids writing a temp file,
+       contributed by Tobias Peirick.
+       Use double arrays (dna) instead of float (numa) for set ops.
+       Enrolled in coverity scan to find potential bugs (Stefan Weil
+       managed it). Fixed about 200 of them, mostly potential memory
+       leaks from early function exit.
+       Cleanup of gray quantization functions and tests.
+       Refactored connectivity-conserving operations, to make them more useful.
+       Provided methods for measuring and regularizing the width of strokes.
+       Removed viewfiles.c from library; code is now in prog htmlviewer.c.
+       Better debugging in page segmentation (pageseg.c)
+       Deprecated the pixDisplayWrite*() debugging methods.
+       Added about 15 regression tests to the framework in alltests_reg.c
+       Final mods for compatibility with tesseract 4.00.
+           
+1.73   25 Jan 16
+       All lept_* functions have been rewritten to avoid path rewrites for
+       output to temp files, which were introduced in 1.72.
+       Now, (1) files are written to the directory specified and (2) we
+       are careful to write to subdirectories of /tmp/lept/ for all test
+       programs, starting with the reg tests and prog/dewarp* and
+       prog/recog*.  This also required re-writing stringcode.c and
+       stringtemplate1.txt to write temp files to subdirectories.
+       Goal is to write to the specified path while not spamming the
+       /tmp and /tmp/lept directories.  This is particularly important
+       on windows because files in the <TEMP> directory are not cleared
+       on reboot.
+       Naming changes (to avoid collisions):
+         #defines MALLOC --> LEPT_MALLOC, CALLOC --> LEPT_CALLOC, etc.
+         ByteBuffer --> L_ByteBuffer
+       Added grayscale histogram functions that can be used to compare images.
+       Added functions to determine if an image region has horizontal
+       text lines.
+       Added functions to compare photo regions of images to determine
+       if they're essentially the same.
+       Added red-black tree utility functions to implement maps and sets.
+       The keys for maps and sets can be 64-bit entities (signed and
+       unsigned integers and doubles).
+       Implemented hashsets and hashmaps, using 64 bit keys.
+       Replaced the numaHash by l_dnaHash; removed numa2d
+       Improved security of tiff and gif reading, to prevent memory corruption
+       when reading bad data.
+       Removed src files: bootnumgen.c
+       Added src files: rbtree.c, rbtree.h, map.c, bootnumgen1.c, bootnumgen2.c
+       Added prog files: rbtreetest.c, maptest.c, settest.c, hashtest.c,
+                         recog_bootnum.c, percolatetest.c
+       Added files for building using cmake (Egor Pugin)
+
+1.72   5 Apr 15
+       Better handling of 1 bpp colormap read/write with png so that
+       they are losseless.  The colormap is always removed on read and
+       the conversion is to the simplest non-cmapped pix that can fully
+       represent the input -- both with and without alpha.
+       Fixed overflow bug in pixCorrelationBinary().
+       Fixed orientation flags and handling of 16 bit RGB in tiff.
+       Also new wrappers to TIFFClientOpen(), so we no longer go through
+       the file descriptor for memory operations.
+       Improvements in the dewarp functions.
+       New box sequence smoothings.
+       New antialiased painting through mask; previously it was only
+       implemented for connected components in a mask.
+       Better error handling and debug output with jpeg2000 read/write.
+       Implemented base64 encoding.  This allows binary data to be represented
+       as a C string that can be compiled.  Used this in bmf utility.
+       Implemented automatic code generation for deserialization from
+       compiled strings (stringcode.*)
+       Regression tests write to leptonica subdir of <Temp> in windows; in
+       unix it is optional.  This avoids spamming the <Temp> directory.
+       Added new colorspace conversions (XYZ, LAB).
+       New source files: encoding.c, bmfdata.h, stringcode.c, stringcode.h,
+         bootnumgen.c.
+       Removed source files: convolvelow.c, graymorphlow.c
+       New programs: genfonts_reg, colorize_reg, texturefill_reg,
+         autogentest1, autogentest2.
+       alltests_reg now has 66 tests.
+
+1.71   18 Jun 14
+       This version supports tesseract 3.04.  In particular, 3.04
+        has automatic conversion of a set of scanned images, either in a
+        directory or coming directly from a scanner, into pdf with injected
+        text.  This is something we've wanted to do for several years!
+       Improved jp2k header reading, including resolution.
+       Removed src files: rotateorthlow.c, pdfio.c, pdfiostub.c
+       Renamed jp2kio.c, jp2kiostub.c ==> jp2kheader.c, jp2kheaderstub.c.
+        These header reading functions parse the jp2k files, and
+        don't require a jpeg2000 library.
+       New jp2kio.c, jp2kiostub.c, that uses openjpeg-2.X to read
+       and write jp2k.  We now support I/O from these formats:
+         png, tiff, jpeg, bmp, pnm, webp, gif and jp2k
+        as well as writing to PostScript and pdf.
+       New pdfio1.c, pdfio1stub.c, pdfio2.c pdfio2stub.c, where we've
+        split functions into high and low level.
+       Fixed memory bug in bilateral.c
+       Improved reading/write of binary data from file.  For example,
+        l_binaryReadStream() can now be used to capture data piped
+        in via stdin.
+       Font directory now arg passed in everywhere (not hardcoded)
+       Don't write temporary files to /tmp; only to a small number of
+       subdirectories, to avoid spamming the /tmp directory.  E.g.,
+       for regression tests, the current output is now to /tmp/regout/.
+       For jpeg reading modify pixReadJpeg() to take as a hint
+        a bit flag that allows extraction of only the luminance channel.
+       Allow wrapping of pdf objects from png images without transcoding
+        (thanks to Jeff Breidenbach)
+       Better support for alpha on read/write with png, including
+       1 bpp with colormap, alpha (supported in png with transparency array)
+
+1.70   3 Feb 14   (distribution to debian; ubuntu 14-04; 4.1.0)
+       New bilateral filtering.
+       New simple character recognition utility.
+       Improved dewarping functionality, in model building and rendering.
+        More flexible use of ref models.
+       Better and more consistent handling of alpha layer in RGBA, though
+        use of the spp field.  Ability to handle more png files with alpha,
+        including palette with alpha.
+       New fast converters from jpeg and jpeg2000 to pdf, without transcoding.
+       Made bmp reader (and pix reading in general) more robust; avoid
+        size overflow errors.
+       New text labelling operations; depth conversion of a set of images
+       New license (essentially BSD 2-clause), to specify conditions
+        for both source and binary distribution.
+       Improved auto make: make all progs, install just 11, test 61.
+       New src files: bilateral.{c,h}, dewarp1.c, dewarp2.c,
+           dewarp3.c, dewarp4.c, jp2kio.c, jp2kiostub.c,
+           pixlabel.c, recogbasic.c, recogdid.c, recogident.c,
+           recogtrain.c, recog.h
+       New prog files: adaptmap_dark.c, alphaxform_ret.c,
+           bilateral_reg.c, binarize_reg.c, binarize_set.c,
+           blackwhite_reg.c, blend1_reg.c, blend3_reg.c, blend4_reg.c,
+           boxa1_reg.c, colorcontent_reg.c, coloring_reg.c,
+           colorspace_reg.c, compare_reg.c, converttopdf.c,
+           croptest.c, dewarprules.c, dewarptest1.c, dewarptest2.c,
+           dewarptest3.c, dewarptest4.c, displayboxa.c, displaypix.c,
+           displaypixa.c, findcorners_reg.c, fpix1_reg.c,
+           fpix2_reg.c, fpixcontours.c, insert_reg.c, italictest.c,
+           jpegio_reg.c, label_reg.c, multitype_reg.c, nearline_reg.c,
+           newspaper_reg.c, numa1_reg.c, numa2_reg.c, recogsort.c,
+           recogtest1.c, shear1_reg.c, webpio_reg.c, wordboxes_reg.c
+       Removed src files: arithlow.c, binexpandlow.c, binreducelow.c,
+           dewarp.c
+       Removed prog files: blend_reg.c, blendtest1.c,
+           dewarptest.c, fpix_reg.c, inserttest.c, numa_reg.c, rotatetest2.c
+           shear_reg, xvdisp.c
+
+1.69   16 Jan 12   (distribution to debian; ubuntu 12-04; 3.0.0)
        Fixed bug in pdf generation for large files, using a new
         double array (dnabasic.c).  Added several new modes for pdf
         generation from sets of images.

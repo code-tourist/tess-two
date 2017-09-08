@@ -20,10 +20,9 @@
  ** limitations under the License.
 ******************************************************************************/
 
-
-/**----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
           Include Files and Type Defines
-----------------------------------------------------------------------------**/
+----------------------------------------------------------------------------*/
 #include "oldlist.h"
 #include "efio.h"
 #include "emalloc.h"
@@ -42,21 +41,19 @@
 
 DECLARE_STRING_PARAM_FLAG(D);
 
-/**----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
           Public Function Prototypes
-----------------------------------------------------------------------------**/
+----------------------------------------------------------------------------*/
 int main (
      int  argc,
      char  **argv);
 
-/**----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
           Private Function Prototypes
-----------------------------------------------------------------------------**/
+----------------------------------------------------------------------------*/
 
-void WriteNormProtos (
-     const char  *Directory,
-     LIST  LabeledProtoList,
-   CLUSTERER *Clusterer);
+void WriteNormProtos(const char *Directory, LIST LabeledProtoList,
+                     const FEATURE_DESC_STRUCT *feature_desc);
 
 /*
 PARAMDESC *ConvertToPARAMDESC(
@@ -71,9 +68,9 @@ void WriteProtos(
      BOOL8  WriteSigProtos,
      BOOL8  WriteInsigProtos);
 
-/**----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
           Global Data Definitions and Declarations
-----------------------------------------------------------------------------**/
+----------------------------------------------------------------------------*/
 /* global variable to hold configuration parameters to control clustering */
 //-M 0.025   -B 0.05   -I 0.8   -C 1e-3
 CLUSTERCONFIG  CNConfig =
@@ -81,65 +78,59 @@ CLUSTERCONFIG  CNConfig =
   elliptical, 0.025, 0.05, 0.8, 1e-3, 0
 };
 
-
-/**----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
               Public Code
-----------------------------------------------------------------------------**/
+----------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-int main(int  argc, char* argv[])
-
-/*
-**  Parameters:
-**    argc  number of command line arguments
-**    argv  array of command line arguments
-**  Globals: none
-**  Operation:
-**    This program reads in a text file consisting of feature
-**    samples from a training page in the following format:
-**
-**      FontName CharName NumberOfFeatureTypes(N)
-**         FeatureTypeName1 NumberOfFeatures(M)
-**            Feature1
-**            ...
-**            FeatureM
-**         FeatureTypeName2 NumberOfFeatures(M)
-**            Feature1
-**            ...
-**            FeatureM
-**         ...
-**         FeatureTypeNameN NumberOfFeatures(M)
-**            Feature1
-**            ...
-**            FeatureM
-**      FontName CharName ...
-**
-**    It then appends these samples into a separate file for each
-**    character.  The name of the file is
-**
-**      DirectoryName/FontName/CharName.FeatureTypeName
-**
-**    The DirectoryName can be specified via a command
-**    line argument.  If not specified, it defaults to the
-**    current directory.  The format of the resulting files is:
-**
-**      NumberOfFeatures(M)
-**         Feature1
-**         ...
-**         FeatureM
-**      NumberOfFeatures(M)
-**      ...
-**
-**    The output files each have a header which describes the
-**    type of feature which the file contains.  This header is
-**    in the format required by the clusterer.  A command line
-**    argument can also be used to specify that only the first
-**    N samples of each class should be used.
-**  Return: none
-**  Exceptions: none
-**  History: Fri Aug 18 08:56:17 1989, DSJ, Created.
+/**
+* This program reads in a text file consisting of feature
+* samples from a training page in the following format:
+* @verbatim
+   FontName CharName NumberOfFeatureTypes(N)
+      FeatureTypeName1 NumberOfFeatures(M)
+         Feature1
+         ...
+         FeatureM
+      FeatureTypeName2 NumberOfFeatures(M)
+         Feature1
+         ...
+         FeatureM
+      ...
+      FeatureTypeNameN NumberOfFeatures(M)
+         Feature1
+         ...
+         FeatureM
+   FontName CharName ...
+@endverbatim
+* It then appends these samples into a separate file for each
+* character.  The name of the file is
+*
+*   DirectoryName/FontName/CharName.FeatureTypeName
+*
+* The DirectoryName can be specified via a command
+* line argument.  If not specified, it defaults to the
+* current directory.  The format of the resulting files is:
+* @verbatim
+   NumberOfFeatures(M)
+      Feature1
+      ...
+      FeatureM
+   NumberOfFeatures(M)
+   ...
+@endverbatim
+* The output files each have a header which describes the
+* type of feature which the file contains.  This header is
+* in the format required by the clusterer.  A command line
+* argument can also be used to specify that only the first
+* N samples of each class should be used.
+* @param argc  number of command line arguments
+* @param argv  array of command line arguments
+* @return none
+* @note Globals: none
+* @note Exceptions: none
+* @note History: Fri Aug 18 08:56:17 1989, DSJ, Created.
 */
-
-{
+int main(int argc, char *argv[]) {
   // Set the global Config parameters before parsing the command line.
   Config = CNConfig;
 
@@ -169,11 +160,18 @@ int main(int  argc, char* argv[])
   // reduce the min samples:
   // Config.MinSamples = 0.5 / num_fonts;
   pCharList = CharList;
+  // The norm protos will count the source protos, so we keep them here in
+  // freeable_protos, so they can be freed later.
+  GenericVector<LIST> freeable_protos;
   iterate(pCharList) {
     //Cluster
     CharSample = (LABELEDLIST)first_node(pCharList);
     Clusterer =
       SetUpForClustering(FeatureDefs, CharSample, PROGRAM_FEATURE_TYPE);
+    if (Clusterer == NULL) {  // To avoid a SIGSEGV
+      fprintf(stderr, "Error: NULL clusterer!\n");
+      return 1;
+    }
     float SavedMinSamples = Config.MinSamples;
     // To disable the tendency to produce a single cluster for all fonts,
     // make MagicSamples an impossible to achieve number:
@@ -192,44 +190,39 @@ int main(int  argc, char* argv[])
     }
     Config.MinSamples = SavedMinSamples;
     AddToNormProtosList(&NormProtoList, ProtoList, CharSample->Label);
+    freeable_protos.push_back(ProtoList);
+    FreeClusterer(Clusterer);
   }
   FreeTrainingSamples(CharList);
-  if (Clusterer == NULL) { // To avoid a SIGSEGV
-    fprintf(stderr, "Error: NULL clusterer!\n");
-    return 1;
-  }
-  WriteNormProtos(FLAGS_D.c_str(), NormProtoList, Clusterer);
+  int desc_index = ShortNameToFeatureType(FeatureDefs, PROGRAM_FEATURE_TYPE);
+  WriteNormProtos(FLAGS_D.c_str(), NormProtoList,
+                  FeatureDefs.FeatureDesc[desc_index]);
   FreeNormProtoList(NormProtoList);
-  FreeProtoList(&ProtoList);
-  FreeClusterer(Clusterer);
+  for (int i = 0; i < freeable_protos.size(); ++i) {
+    FreeProtoList(&freeable_protos[i]);
+  }
   printf ("\n");
   return 0;
 }  // main
 
-
-/**----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
               Private Code
-----------------------------------------------------------------------------**/
+----------------------------------------------------------------------------*/
 
 /*----------------------------------------------------------------------------*/
-void WriteNormProtos (
-     const char  *Directory,
-     LIST  LabeledProtoList,
-   CLUSTERER *Clusterer)
-
-/*
-**  Parameters:
-**    Directory  directory to place sample files into
-**  Operation:
-**    This routine writes the specified samples into files which
-**    are organized according to the font name and character name
-**    of the samples.
-**  Return: none
-**  Exceptions: none
-**  History: Fri Aug 18 16:17:06 1989, DSJ, Created.
+/**
+* This routine writes the specified samples into files which
+* are organized according to the font name and character name
+* of the samples.
+* @param Directory  directory to place sample files into
+* @param LabeledProtoList List of labeled protos
+* @param feature_desc Description of the features
+* @return none
+* @note Exceptions: none
+* @note History: Fri Aug 18 16:17:06 1989, DSJ, Created.
 */
-
-{
+void WriteNormProtos(const char *Directory, LIST LabeledProtoList,
+                     const FEATURE_DESC_STRUCT *feature_desc) {
   FILE    *File;
   STRING Filename;
   LABELEDLIST LabeledProto;
@@ -244,8 +237,8 @@ void WriteNormProtos (
   Filename += "normproto";
   printf ("\nWriting %s ...", Filename.string());
   File = Efopen (Filename.string(), "wb");
-  fprintf(File,"%0d\n",Clusterer->SampleSize);
-  WriteParamDesc(File,Clusterer->SampleSize,Clusterer->ParamDesc);
+  fprintf(File, "%0d\n", feature_desc->NumParams);
+  WriteParamDesc(File, feature_desc->NumParams, feature_desc->ParamDesc);
   iterate(LabeledProtoList)
   {
     LabeledProto = (LABELEDLIST) first_node (LabeledProtoList);
@@ -260,7 +253,7 @@ void WriteNormProtos (
       exit(1);
     }
     fprintf(File, "\n%s %d\n", LabeledProto->Label, N);
-    WriteProtos(File, Clusterer->SampleSize, LabeledProto->List, true, false);
+    WriteProtos(File, feature_desc->NumParams, LabeledProto->List, true, false);
   }
   fclose (File);
 

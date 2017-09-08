@@ -3,8 +3,8 @@
  * Description: Implements a pass over the page res, exploring the alternative
  *              spacing possibilities, trying to use context to improve the
  *              word spacing
-* Author:		Phil Cheatle
-* Created:		Thu Oct 21 11:38:43 BST 1993
+* Author:   Phil Cheatle
+* Created:    Thu Oct 21 11:38:43 BST 1993
 *
 * (C) Copyright 1993, Hewlett-Packard Ltd.
 ** Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,6 @@
 *
 **********************************************************************/
 
-#include "mfcpch.h"
 #include <ctype.h>
 #include "reject.h"
 #include "statistc.h"
@@ -28,7 +27,6 @@
 #include "genblob.h"
 #include "tessvars.h"
 #include "tessbox.h"
-#include "secname.h"
 #include "globals.h"
 #include "tesseractclass.h"
 
@@ -36,6 +34,7 @@
 #define MAXSPACING      128      /*max expected spacing in pix */
 
 namespace tesseract {
+
 /**
  * @name fix_fuzzy_spaces()
  * Walk over the page finding sequences of words joined by fuzzy spaces. Extract
@@ -56,7 +55,7 @@ void Tesseract::fix_fuzzy_spaces(ETEXT_DESC *monitor,
   WERD_RES *word_res;
   WERD_RES_LIST fuzzy_space_words;
   inT16 new_length;
-  BOOL8 prevent_null_wd_fixsp;   // DONT process blobless wds
+  BOOL8 prevent_null_wd_fixsp;   // DON'T process blobless wds
   inT32 word_index;              // current word
 
   block_res_it.set_to_list(&page_res->block_res_list);
@@ -184,7 +183,7 @@ void initialise_search(WERD_RES_LIST &src_list, WERD_RES_LIST &new_list) {
   for (src_it.mark_cycle_pt(); !src_it.cycled_list(); src_it.forward()) {
     src_wd = src_it.data();
     if (!src_wd->combination) {
-      new_wd = new WERD_RES(*src_wd);
+      new_wd = WERD_RES::deep_copy(src_wd);
       new_wd->combination = FALSE;
       new_wd->part_of_combo = FALSE;
       new_it.add_after_then_move(new_wd);
@@ -204,13 +203,13 @@ void Tesseract::match_current_words(WERD_RES_LIST &words, ROW *row,
   for (word_it.mark_cycle_pt(); !word_it.cycled_list(); word_it.forward()) {
     word = word_it.data();
     if ((!word->part_of_combo) && (word->box_word == NULL)) {
-      classify_word_and_language(&Tesseract::classify_word_pass2,
-                                 block, row, word);
+      WordData word_data(block, row, word);
+      SetupWordPassN(2, &word_data);
+      classify_word_and_language(2, NULL, &word_data);
     }
     prev_word_best_choice_ = word->best_choice;
   }
 }
-
 
 /**
  * @name eval_word_spacing()
@@ -222,7 +221,7 @@ void Tesseract::match_current_words(WERD_RES_LIST &words, ROW *row,
  * fuzzy spaces. The problem with the basic measure is that "561 63" would score
  * the same as "56163", though given our knowledge that the space is fuzzy, and
  * that there is a "1" next to the fuzzy space, we need to ensure that "56163"
- * is prefered.
+ * is preferred.
  *
  * The solution is to NOT COUNT the score of any word which has a digit at one
  * end and a "1Il" as the character the other side of the space.
@@ -272,8 +271,8 @@ inT16 Tesseract::eval_word_spacing(WERD_RES_LIST &word_res_list) {
     } else {
       /*
         Can we add the prev word score and potentially count this word?
-        Yes IF it didnt end in a 1 when the first char of this word is a digit
-          AND it didnt end in a digit when the first char of this word is a 1
+        Yes IF it didn't end in a 1 when the first char of this word is a digit
+          AND it didn't end in a digit when the first char of this word is a 1
       */
       word_len = word->reject_map.length();
       current_word_ok_so_far = FALSE;
@@ -464,7 +463,6 @@ void Tesseract::dump_words(WERD_RES_LIST &perm, inT16 score,
       }
     }
 
-    #ifndef SECURE_NAMES
     if (debug_fix_space_level > 1) {
       switch (mode) {
         case 1:
@@ -499,88 +497,7 @@ void Tesseract::dump_words(WERD_RES_LIST &perm, inT16 score,
       }
       tprintf("\"\n");
     }
-    #endif
   }
-}
-
-
-/**
- * @name uniformly_spaced()
- * Return true if one of the following are true:
- * - All inter-char gaps are the same width
- * - The largest gap is no larger than twice the mean/median of the others
- * - The largest gap is < normalised_max_nonspace
- * **** REMEMBER - WE'RE NOW WORKING WITH A BLN WERD !!!
- */
-BOOL8 Tesseract::uniformly_spaced(WERD_RES *word) {
-  TBOX box;
-  inT16 prev_right = -MAX_INT16;
-  inT16 gap;
-  inT16 max_gap = -MAX_INT16;
-  inT16 max_gap_count = 0;
-  STATS gap_stats(0, MAXSPACING);
-  BOOL8 result;
-  const ROW *row = word->denorm.row();
-  float max_non_space;
-  float normalised_max_nonspace;
-  inT16 i = 0;
-  inT16 offset = 0;
-  STRING punct_chars = "\"`',.:;";
-
-  for (TBLOB* blob = word->rebuild_word->blobs; blob != NULL;
-       blob = blob->next) {
-    box = blob->bounding_box();
-    if ((prev_right > -MAX_INT16) &&
-        (!punct_chars.contains(
-             word->best_choice->unichar_string()
-                 [offset - word->best_choice->unichar_lengths()[i - 1]]) &&
-         !punct_chars.contains(
-             word->best_choice->unichar_string()[offset]))) {
-      gap = box.left() - prev_right;
-      if (gap < max_gap) {
-        gap_stats.add(gap, 1);
-      } else if (gap == max_gap) {
-        max_gap_count++;
-      } else {
-        if (max_gap_count > 0)
-          gap_stats.add(max_gap, max_gap_count);
-        max_gap = gap;
-        max_gap_count = 1;
-      }
-    }
-    prev_right = box.right();
-    offset += word->best_choice->unichar_lengths()[i++];
-  }
-
-  max_non_space = (row->space() + 3 * row->kern()) / 4;
-  normalised_max_nonspace = max_non_space * kBlnXHeight / row->x_height();
-
-  result = (
-      gap_stats.get_total() == 0 ||
-      max_gap <= normalised_max_nonspace ||
-      (gap_stats.get_total() > 2 && max_gap <= 2 * gap_stats.median()) ||
-      (gap_stats.get_total() <= 2 && max_gap <= 2 * gap_stats.mean()));
-  #ifndef SECURE_NAMES
-  if ((debug_fix_space_level > 1)) {
-    if (result) {
-      tprintf(
-          "ACCEPT SPACING FOR: \"%s\" norm_maxnon = %f max=%d maxcount=%d "
-          "total=%d mean=%f median=%f\n",
-          word->best_choice->unichar_string().string(), normalised_max_nonspace,
-          max_gap, max_gap_count, gap_stats.get_total(), gap_stats.mean(),
-          gap_stats.median());
-    } else {
-      tprintf(
-          "REJECT SPACING FOR: \"%s\" norm_maxnon = %f max=%d maxcount=%d "
-          "total=%d mean=%f median=%f\n",
-          word->best_choice->unichar_string().string(), normalised_max_nonspace,
-          max_gap, max_gap_count, gap_stats.get_total(), gap_stats.mean(),
-          gap_stats.median());
-    }
-  }
-  #endif
-
-  return result;
 }
 
 BOOL8 Tesseract::fixspace_thinks_word_done(WERD_RES *word) {
@@ -589,7 +506,7 @@ BOOL8 Tesseract::fixspace_thinks_word_done(WERD_RES *word) {
 
   /*
     Use all the standard pass 2 conditions for mode 5 in set_done() in
-    reject.c BUT DONT REJECT IF THE WERD IS AMBIGUOUS - FOR SPACING WE DONT
+    reject.c BUT DON'T REJECT IF THE WERD IS AMBIGUOUS - FOR SPACING WE DON'T
     CARE WHETHER WE HAVE of/at on/an etc.
   */
   if (fixsp_done_mode > 0 &&
@@ -656,7 +573,6 @@ void Tesseract::fix_noisy_space_list(WERD_RES_LIST &best_perm, ROW *row,
   WERD_RES_LIST current_perm;
   WERD_RES_IT current_perm_it(&current_perm);
   WERD_RES *old_word_res;
-  WERD_RES *new_word_res;
   inT16 current_score;
   BOOL8 improved = FALSE;
 
@@ -664,12 +580,12 @@ void Tesseract::fix_noisy_space_list(WERD_RES_LIST &best_perm, ROW *row,
 
   dump_words(best_perm, best_score, 1, improved);
 
-  new_word_res = new WERD_RES;
   old_word_res = best_perm_it.data();
+  // Even deep_copy doesn't copy the underlying WERD unless its combination
+  // flag is true!.
   old_word_res->combination = TRUE;   // Kludge to force deep copy
-  *new_word_res = *old_word_res;      // deep copy
+  current_perm_it.add_to_end(WERD_RES::deep_copy(old_word_res));
   old_word_res->combination = FALSE;  // Undo kludge
-  current_perm_it.add_to_end(new_word_res);
 
   break_noisiest_blob_word(current_perm);
 
@@ -775,7 +691,6 @@ inT16 Tesseract::worst_noise_blob(WERD_RES *word_res,
   if (word_res->rebuild_word == NULL)
     return -1;  // Can't handle cube words.
 
-  TBLOB* blob = word_res->rebuild_word->blobs;
   // Normalised.
   int blob_count = word_res->box_word->length();
   ASSERT_HOST(blob_count <= 512);
@@ -790,7 +705,8 @@ inT16 Tesseract::worst_noise_blob(WERD_RES *word_res,
             word_res->best_choice->unichar_string().string());
   #endif
 
-  for (i = 0; i < blob_count && blob != NULL; i++, blob = blob->next) {
+  for (i = 0; i < blob_count && i < word_res->rebuild_word->NumBlobs(); i++) {
+    TBLOB* blob = word_res->rebuild_word->blobs[i];
     if (word_res->reject_map[i].accepted())
       noise_score[i] = non_noise_limit;
     else
@@ -914,7 +830,6 @@ namespace tesseract {
 inT16 Tesseract::fp_eval_word_spacing(WERD_RES_LIST &word_res_list) {
   WERD_RES_IT word_it(&word_res_list);
   WERD_RES *word;
-  inT16 word_length;
   inT16 score = 0;
   inT16 i;
   float small_limit = kBlnXHeight * fixsp_small_outlines_size;
@@ -923,17 +838,16 @@ inT16 Tesseract::fp_eval_word_spacing(WERD_RES_LIST &word_res_list) {
     word = word_it.data();
     if (word->rebuild_word == NULL)
       continue;  // Can't handle cube words.
-    word_length = word->reject_map.length();
     if (word->done ||
         word->tess_accepted ||
         word->best_choice->permuter() == SYSTEM_DAWG_PERM ||
         word->best_choice->permuter() == FREQ_DAWG_PERM ||
         word->best_choice->permuter() == USER_DAWG_PERM ||
         safe_dict_word(word) > 0) {
-      TBLOB* blob = word->rebuild_word->blobs;
+      int num_blobs = word->rebuild_word->NumBlobs();
       UNICHAR_ID space = word->uch_set->unichar_to_id(" ");
-      for (i = 0; i < word->best_choice->length() && blob != NULL;
-           ++i, blob = blob->next) {
+      for (i = 0; i < word->best_choice->length() && i < num_blobs; ++i) {
+        TBLOB* blob = word->rebuild_word->blobs[i];
         if (word->best_choice->unichar_id(i) == space ||
             blob_noise_score(blob) < small_limit) {
           score -= 1;  // penalise possibly erroneous non-space

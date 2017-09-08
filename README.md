@@ -1,85 +1,102 @@
-#tess-two
-* * *
+# tess-two
 
-A fork of Tesseract Tools for Android ([tesseract-android-tools](http://code.google.com/p/tesseract-android-tools/)) that adds some 
+A fork of Tesseract Tools for Android 
+([tesseract-android-tools][tesseract-android-tools]) that adds some
 additional functions. Tesseract Tools for Android is a set of Android APIs and
-build files for the [Tesseract OCR](https://code.google.com/p/tesseract-ocr/) and [Leptonica](http://www.leptonica.com/) image processing libraries.
+build files for the [Tesseract OCR][tesseract-ocr] and [Leptonica][leptonica] 
+image processing libraries.
 
-This project works with Tesseract v3.02.02. The required source code for Tesseract 3.02.02 and
-Leptonica 1.69 is included within the `tess-two/jni` folder.
+This project works with:
 
-The `tess-two` subdirectory contains tools for compiling the Tesseract and Leptonica
-libraries for use on the Android platform. It contains an Eclipse Android
-[library project](http://developer.android.com/tools/projects/projects-eclipse.html#ReferencingLibraryProject)
-that provides a Java API for accessing natively-compiled Tesseract and Leptonica APIs.
+ - Tesseract 3.05
+ - Leptonica 1.74.1
+ - libjpeg 9b
+ - libpng 1.6.25
+ 
+The source code for these dependencies is included within the
+`tess-two/jni` folder. 
 
-## Requires
+The `tess-two` module contains tools for compiling the Tesseract and Leptonica
+libraries for use on the Android platform. It provides a Java API for accessing 
+natively-compiled Tesseract and Leptonica APIs.
 
-* Android 2.2 or higher
-* A [trained data file](https://code.google.com/p/tesseract-ocr/downloads/list) for a language. Data files must be extracted to a subdirectory named `tessdata`.
+The `eyes-two` module contains additional image processing code copied from the
+[eyes-free project][eyes-free]. It includes native functions for text detection,
+blur detection, optical flow detection, and thresholding. Eyes-two is not needed
+for using the Tesseract or Leptonica APIs.
 
-eyes-two
-========
+The `tess-two-test` module contains instrumented unit tests for tess-two.
 
-The `eyes-two` subdirectory contains a second, separate library project with additional image 
-processing code copied from the [eyes-free project](http://code.google.com/p/eyes-free/) without 
-modifications. It includes native functions for text detection, blurriness detection, optical flow 
-detection, and thresholding. Building eyes-two is not necessary for using the Tesseract API.
+## Pre-requisites
 
-While I haven't tested all the Eyes-two code, I've bundled it in this project alongside tess-two for
-convenience due to its dependency on Leptonica. 
+* Android 2.3 or higher
+* A v3.04 [trained data file][tessdata] for a language. Data files must be 
+copied to the Android device in a subdirectory named `tessdata`.
 
-Build
-=====
+## Usage
 
-This project is set up to build on Android SDK Tools r19+ and Android NDK r7c+. The build works on Linux, Mac OS X, and Windows 7. See [Issues](https://github.com/rmtheis/tess-two/issues) for reported build issues.
+To use tess-two from your app, edit your app module's `build.gradle` file to add 
+tess-two as an external dependency:
 
-On 64-bit Ubuntu, you may need to install the `ia32-libs` 32-bit compatibility library.
+	dependencies {
+	    compile 'com.rmtheis:tess-two:8.0.0'
+	}
+	
+[Javadoc][javadoc] is available.
 
-To build tess-two, run the following commands in the terminal:
+## Building
 
-    git clone git://github.com/rmtheis/tess-two tess
-    cd tess
-    cd tess-two
-    ndk-build
-    android update project --path .
-    ant release
+If you want to modify the tess-two code, or you want to use the eyes-two module,
+you may build the project yourself locally. See [BUILDING.md](BUILDING.md).
 
-To build eyes-two, additionally run the following:
 
-    cd ..
-    cd eyes-two
-    ndk-build
-    android update project --path .
-    ant release
+## Versions
 
-After building, the tess-two and eyes-two projects can be imported into Eclipse using 
-File->Import->Existing Projects into Workspace.
+Release points are tagged with [version numbers][semantic-versioning]. A change 
+to the major version number indicates an API change making that version 
+incompatible with previous versions.
 
-Maven
-=====
+The [change log](CHANGELOG.md) shows what's new in each version.
 
-While this project does not require Maven (and this project has not yet been registered in a Maven central repository), it can be [integrated into a local Maven repository for convenience](http://www.jameselsey.co.uk/blogs/techblog/tesseract-ocr-on-android-is-easier-if-you-maven-ise-it-works-on-windows-too/).
+## Support
 
-License
-=======
+* Stack Overflow: https://stackoverflow.com/questions/tagged/tess-two
+* tesseract-ocr: https://groups.google.com/forum/#!forum/tesseract-ocr
 
-This project is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
+If you've found an error in this project, please file an issue.
 
-    /*
-     * Copyright 2011 Robert Theis
-     *
-     * Licensed under the Apache License, Version 2.0 (the "License");
-     * you may not use this file except in compliance with the License.
-     * You may obtain a copy of the License at
-     *
-     *      http://www.apache.org/licenses/LICENSE-2.0
-     *
-     * Unless required by applicable law or agreed to in writing, software
-     * distributed under the License is distributed on an "AS IS" BASIS,
-     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     * See the License for the specific language governing permissions and
-     * limitations under the License.
-     */
+Patches are encouraged, and may be submitted by forking this project and 
+submitting a pull request through GitHub. 
 
-[Leptonica](http://www.leptonica.com) by Dan Bloomberg is licensed under a [Creative Commons Attribution 3.0 United States License](http://creativecommons.org/licenses/by/3.0/us/).
+## License
+
+    Copyright 2011 Robert Theis
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+## See Also
+
+The Google Mobile Vision API team has made available an OCR capability that is
+provided to developers through the Google Play Services library: The
+[Mobile Vision API][mobile-vision-api] offers a simple API for OCR that
+currently works for Latin-based characters.
+
+[tesseract-android-tools]: https://github.com/alanv/tesseract-android-tools
+[tesseract-ocr]: https://github.com/tesseract-ocr/tesseract
+[leptonica]: https://github.com/DanBloomberg/leptonica
+[eyes-free]: https://github.com/rmtheis/eyes-free
+[tessdata]: https://github.com/tesseract-ocr/tessdata/tree/3.04.00
+[javadoc]: https://rmtheis.github.io/tess-two/javadoc/index.html
+[semantic-versioning]: http://semver.org
+[stackoverflow]: https://stackoverflow.com/
+[mobile-vision-api]: https://developers.google.com/vision/

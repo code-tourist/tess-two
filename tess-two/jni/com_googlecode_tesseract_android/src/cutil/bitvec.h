@@ -30,29 +30,29 @@ typedef uinT32 *BIT_VECTOR;
 /*-----------------------------------------------------------------------------
           Public Function Prototypes
 -----------------------------------------------------------------------------*/
-#define zero_all_bits(array,length) \
-{\
-    register int            index;                        /*temporary index*/\
-\
-for (index=0;index<length;index++)\
-    array[index]=0;                                        /*zero all bits*/\
-}
+#define zero_all_bits(array, length)         \
+  {                                          \
+    int index; /*temporary index*/           \
+                                             \
+    for (index = 0; index < length; index++) \
+      array[index] = 0; /*zero all bits*/    \
+  }
 
-#define set_all_bits(array,length) \
-{\
-    register int            index;                        /*temporary index*/\
-\
-for (index=0;index<length;index++)\
-    array[index]= ~0;                                    /*set all bits*/\
-}
+#define set_all_bits(array, length)          \
+  {                                          \
+    int index; /*temporary index*/           \
+                                             \
+    for (index = 0; index < length; index++) \
+      array[index] = ~0; /*set all bits*/    \
+  }
 
-#define copy_all_bits(source,dest,length) \
-{\
-    register int            index;                        /*temporary index*/\
-\
-for (index=0;index<length;index++)\
-    dest[index]=source[index];                            /*copy all bits*/\
-}
+#define copy_all_bits(source, dest, length)          \
+  {                                                  \
+    int index; /*temporary index*/                   \
+                                                     \
+    for (index = 0; index < length; index++)         \
+      dest[index] = source[index]; /*copy all bits*/ \
+  }
 
 #define SET_BIT(array,bit) (array[bit/BITSINLONG]|=1<<(bit&(BITSINLONG-1)))
 
@@ -69,8 +69,6 @@ for (index=0;index<length;index++)\
 BIT_VECTOR ExpandBitVector(BIT_VECTOR Vector, int NewNumBits);
 
 void FreeBitVector(BIT_VECTOR BitVector);
-
-int hamming_distance(uinT32* array1, uinT32* array2, int length);
 
 BIT_VECTOR NewBitVector(int NumBits);
 

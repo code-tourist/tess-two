@@ -53,11 +53,7 @@ bool WordListLangModel::Init() {
   // The last parameter to the Trie constructor (the debug level) is set to
   // false for now, until Cube has a way to express its preferred debug level.
   dawg_ = new Trie(DAWG_TYPE_WORD, "", NO_PERM,
-                   WordListLangModel::kMaxDawgEdges,
                    cntxt_->CharacterSet()->ClassCount(), false);
-  if (dawg_ == NULL) {
-    return false;
-  }
   init_ = true;
   return true;
 }
@@ -74,7 +70,7 @@ LangModEdge **WordListLangModel::GetEdges(CharAltList *alt_list,
   // initialize if necessary
   if (init_ == false) {
     if (Init() == false) {
-      return false;
+      return NULL;
     }
   }
 
@@ -92,15 +88,12 @@ LangModEdge **WordListLangModel::GetEdges(CharAltList *alt_list,
     // advance node
     edge_ref = dawg_->next_node(edge_ref);
     if (edge_ref == 0) {
-      return 0;
+      return NULL;
     }
   }
 
   // allocate memory for edges
   LangModEdge **edge_array = new LangModEdge *[kMaxEdge];
-  if (edge_array == NULL) {
-    return NULL;
-  }
 
   // now get all the emerging edges
   (*edge_cnt) += TessLangModEdge::CreateChildren(cntxt_, dawg_, edge_ref,

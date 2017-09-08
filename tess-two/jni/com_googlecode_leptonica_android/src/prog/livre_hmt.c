@@ -53,11 +53,10 @@ static const char *patname[3] = {
     "tribune-t.png"};     /* patno = 2 */
 
 
-main(int    argc,
-     char **argv)
+int main(int    argc,
+         char **argv)
 {
 l_int32      patno, reduction, width, cols, cx, cy;
-BOX         *box;
 PIX         *pixs, *pixt, *pix, *pixr, *pixp, *pixsel, *pixhmt;
 PIX         *pixd1, *pixd2, *pixd3, *pixd;
 PIXA        *pixa;
@@ -65,14 +64,15 @@ SEL         *selhm;
 static char  mainName[] = "livre_hmt";
 
     if (argc != 3)
-	exit(ERROR_INT(" Syntax:  livre_hmt pattern reduction", mainName, 1));
+        return ERROR_INT(" Syntax:  livre_hmt pattern reduction", mainName, 1);
     patno = atoi(argv[1]);
     reduction = atoi(argv[2]);
 
+    lept_mkdir("lept/livre");
     if ((pixs = pixRead(patname[patno])) == NULL)
-	exit(ERROR_INT("pixs not made", mainName, 1));
+        return ERROR_INT("pixs not made", mainName, 1);
     if (reduction != 4 && reduction != 8 && reduction != 16)
-	exit(ERROR_INT("reduction not 4, 8 or 16", mainName, 1));
+        return ERROR_INT("reduction not 4, 8 or 16", mainName, 1);
 
     if (reduction == 4)
         pixt = pixReduceRankBinaryCascade(pixs, 4, 4, 0, 0);
@@ -91,8 +91,8 @@ static char  mainName[] = "livre_hmt";
 
         /* Display the sel */
     pixsel = pixDisplayHitMissSel(pixp, selhm, 7, HitColor, MissColor);
-    pixDisplay(pixsel, 200, 200);
-    pixWrite("/tmp/pixsel1", pixsel, IFF_PNG);
+    pixDisplay(pixsel, 1000, 300);
+    pixWrite("/tmp/lept/livre/pixsel1", pixsel, IFF_PNG);
 
         /* Use the Sel to find all instances in the page */
     pix = pixRead("tribune-page-4x.png");  /* 4x reduced */
@@ -111,17 +111,17 @@ static char  mainName[] = "livre_hmt";
     selGetParameters(selhm, NULL, NULL, &cy, &cx);
     pixd1 = pixDisplayMatchedPattern(pixr, pixp, pixhmt,
                                      cx, cy, 0x0000ff00, 1.0, 5);
-    pixWrite("/tmp/pixd11", pixd1, IFF_PNG);
+    pixWrite("/tmp/lept/livre/pixd11", pixd1, IFF_PNG);
 
         /* Color each instance at 0.5 scale */
     pixd2 = pixDisplayMatchedPattern(pixr, pixp, pixhmt,
                                      cx, cy, 0x0000ff00, 0.5, 5);
-    pixWrite("/tmp/pixd12", pixd2, IFF_PNG);
+    pixWrite("/tmp/lept/livre/pixd12", pixd2, IFF_PNG);
 
         /* Remove each instance from the input image */
     pixd3 = pixCopy(NULL, pixr);
     pixRemoveMatchedPattern(pixd3, pixp, pixhmt, cx, cy, 1);
-    pixWrite("/tmp/pixr1", pixd3, IFF_PNG);
+    pixWrite("/tmp/lept/livre/pixr1", pixd3, IFF_PNG);
 
     pixa = pixaCreate(2);
     pixaAddPix(pixa, pixs, L_CLONE);
@@ -129,8 +129,8 @@ static char  mainName[] = "livre_hmt";
     cols = (patno == 1) ? 1 : 2;
     width = (patno == 1) ? 800 : 400;
     pixd = pixaDisplayTiledAndScaled(pixa, 32, width, cols, 0, 30, 2);
-    pixWrite("/tmp/hmt.png", pixd, IFF_PNG);
-    pixDisplay(pixd, 0, 300);
+    pixWrite("/tmp/lept/livre/hmt.png", pixd, IFF_PNG);
+    pixDisplay(pixd, 1000, 600);
 
     selDestroy(&selhm);
     pixDestroy(&pixp);
@@ -144,4 +144,3 @@ static char  mainName[] = "livre_hmt";
     pixDestroy(&pixt);
     return 0;
 }
-

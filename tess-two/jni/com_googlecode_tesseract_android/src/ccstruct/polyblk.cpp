@@ -1,7 +1,7 @@
 /**********************************************************************
  * File:        polyblk.c  (Formerly poly_block.c)
  * Description: Polygonal blocks
- * Author:					Sheelagh Lloyd?
+ * Author:          Sheelagh Lloyd?
  * Created:
  *
  * (C) Copyright 1993, Hewlett-Packard Ltd.
@@ -17,7 +17,6 @@
  *
  **********************************************************************/
 
-#include "mfcpch.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -28,8 +27,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config_auto.h"
 #endif
-
-#include "hpddef.h"     // must be last (handpd.dll)
 
 #define PBLOCK_LABEL_SIZE 150
 #define INTERSECTING MAX_INT16
@@ -255,7 +252,7 @@ void POLY_BLOCK::plot(ScrollView* window, inT32 num) {
   if (num > 0) {
     window->TextAttributes("Times", 80, false, false, false);
     char temp_buff[34];
-    #ifdef __UNIX__
+    #if defined(__UNIX__) || defined(MINGW)
     sprintf(temp_buff, INT32FORMAT, num);
     #else
     ltoa (num, temp_buff, 10);
@@ -297,6 +294,8 @@ void POLY_BLOCK::fill(ScrollView* window, ScrollView::Color colour) {
       }
     }
   }
+
+  delete lines;
 }
 #endif
 

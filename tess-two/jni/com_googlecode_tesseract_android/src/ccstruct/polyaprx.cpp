@@ -17,7 +17,6 @@
  *
  **********************************************************************/
 
-#include "mfcpch.h"
 #include          <stdio.h>
 #ifdef __UNIX__
 #include          <assert.h>
@@ -29,10 +28,9 @@
 
 #define EXTERN
 
-EXTERN BOOL_VAR (poly_debug, FALSE, "Debug old poly");
-EXTERN BOOL_VAR (poly_wide_objects_better, TRUE,
-"More accurate approx on wide things");
-
+EXTERN BOOL_VAR(poly_debug, FALSE, "Debug old poly");
+EXTERN BOOL_VAR(poly_wide_objects_better, TRUE,
+                "More accurate approx on wide things");
 
 #define FIXED       4            /*OUTLINE point is fixed */
 
@@ -53,11 +51,13 @@ const int par2 = 6750 / (approx_dist * approx_dist);
  * tesspoly_outline
  *
  * Approximate an outline from chain codes form using the old tess algorithm.
+ * If allow_detailed_fx is true, the EDGEPTs in the returned TBLOB
+ * contain pointers to the input C_OUTLINEs that enable higher-resolution
+ * feature extraction that does not use the polygonal approximation.
  **********************************************************************/
 
 
-TESSLINE* ApproximateOutline(C_OUTLINE* c_outline) {
-  EDGEPT *edgept;                // converted steps
+TESSLINE* ApproximateOutline(bool allow_detailed_fx, C_OUTLINE* c_outline) {
   TBOX loop_box;                  // bounding box
   inT32 area;                    // loop area
   EDGEPT stack_edgepts[FASTEDGELENGTH];  // converted path
@@ -72,9 +72,9 @@ TESSLINE* ApproximateOutline(C_OUTLINE* c_outline) {
   if (!poly_wide_objects_better && loop_box.width() > area)
     area = loop_box.width();
   area *= area;
-  edgept = edgesteps_to_edgepts(c_outline, edgepts);
+  edgesteps_to_edgepts(c_outline, edgepts);
   fix2(edgepts, area);
-  edgept = poly2 (edgepts, area);  // 2nd approximation.
+  EDGEPT* edgept = poly2(edgepts, area);  // 2nd approximation.
   EDGEPT* startpt = edgept;
   EDGEPT* result = NULL;
   EDGEPT* prev_result = NULL;
@@ -87,6 +87,11 @@ TESSLINE* ApproximateOutline(C_OUTLINE* c_outline) {
     } else {
       prev_result->next = new_pt;
       new_pt->prev = prev_result;
+    }
+    if (allow_detailed_fx) {
+      new_pt->src_outline = edgept->src_outline;
+      new_pt->start_step = edgept->start_step;
+      new_pt->step_count = edgept->step_count;
     }
     prev_result = new_pt;
     edgept = edgept->next;
@@ -129,6 +134,7 @@ EDGEPT edgepts[]                 //output is array
   epindex = 0;
   prevdir = -1;
   count = 0;
+  int prev_stepindex = 0;
   do {
     dir = c_outline->step_dir (stepindex);
     vec = c_outline->step (stepindex);
@@ -160,10 +166,14 @@ EDGEPT edgepts[]                 //output is array
       epdir >>= 4;
       epdir &= 7;
       edgepts[epindex].flags[DIR] = epdir;
+      edgepts[epindex].src_outline = c_outline;
+      edgepts[epindex].start_step = prev_stepindex;
+      edgepts[epindex].step_count = stepindex - prev_stepindex;
       epindex++;
       prevdir = dir;
       prev_vec = vec;
       count = 1;
+      prev_stepindex = stepindex;
     }
     else
       count++;
@@ -178,6 +188,9 @@ EDGEPT edgepts[]                 //output is array
   pos += prev_vec;
   edgepts[epindex].flags[RUNLENGTH] = count;
   edgepts[epindex].flags[FLAGS] = 0;
+  edgepts[epindex].src_outline = c_outline;
+  edgepts[epindex].start_step = prev_stepindex;
+  edgepts[epindex].step_count = stepindex - prev_stepindex;
   edgepts[epindex].prev = &edgepts[epindex - 1];
   edgepts[epindex].next = &edgepts[0];
   prevdir += 64;
@@ -201,18 +214,18 @@ EDGEPT edgepts[]                 //output is array
 void fix2(                //polygonal approx
           EDGEPT *start,  /*loop to approimate */
           int area) {
-  register EDGEPT *edgept;       /*current point */
-  register EDGEPT *edgept1;
-  register EDGEPT *loopstart;    /*modified start of loop */
-  register EDGEPT *linestart;    /*start of line segment */
-  register int dir1, dir2;       /*directions of line */
-  register int sum1, sum2;       /*lengths in dir1,dir2 */
+  EDGEPT *edgept; /*current point */
+  EDGEPT *edgept1;
+  EDGEPT *loopstart;             /*modified start of loop */
+  EDGEPT *linestart;             /*start of line segment */
+  int dir1, dir2;                /*directions of line */
+  int sum1, sum2;                /*lengths in dir1,dir2 */
   int stopped;                   /*completed flag */
   int fixed_count;               //no of fixed points
   int d01, d12, d23, gapmin;
   TPOINT d01vec, d12vec, d23vec;
-  register EDGEPT *edgefix, *startfix;
-  register EDGEPT *edgefix0, *edgefix1, *edgefix2, *edgefix3;
+  EDGEPT *edgefix, *startfix;
+  EDGEPT *edgefix0, *edgefix1, *edgefix2, *edgefix3;
 
   edgept = start;                /*start of loop */
   while (((edgept->flags[DIR] - edgept->prev->flags[DIR] + 1) & 7) < 3
@@ -387,10 +400,10 @@ EDGEPT *poly2(                  //second poly
               EDGEPT *startpt,  /*start of loop */
               int area          /*area of blob box */
              ) {
-  register EDGEPT *edgept;       /*current outline point */
+  EDGEPT *edgept;                /*current outline point */
   EDGEPT *loopstart;             /*starting point */
-  register EDGEPT *linestart;    /*start of line */
-  register int edgesum;          /*correction count */
+  EDGEPT *linestart;             /*start of line */
+  int edgesum;                   /*correction count */
 
   if (area < 1200)
     area = 1200;                 /*minimum value */
@@ -486,13 +499,13 @@ void cutline(                //recursive refine
              EDGEPT *last,
              int area        /*area of object */
             ) {
-  register EDGEPT *edge;         /*current edge */
+  EDGEPT *edge;                  /*current edge */
   TPOINT vecsum;                 /*vector sum */
   int vlen;                      /*approx length of vecsum */
   TPOINT vec;                    /*accumulated vector */
   EDGEPT *maxpoint;              /*worst point */
   int maxperp;                   /*max deviation */
-  register int perp;             /*perp distance */
+  int perp;                      /*perp distance */
   int ptcount;                   /*no of points */
   int squaresum;                 /*sum of perps */
 

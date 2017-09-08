@@ -24,52 +24,69 @@
  -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
-
-/*
- *  sel2.c
+/*!
+ * \file sel2.c
+ * <pre>
  *
  *      Contains definitions of simple structuring elements
  *
+ *      Basic brick structuring elements
  *          SELA    *selaAddBasic()
  *               Linear horizontal and vertical
  *               Square
  *               Diagonals
  *
+ *      Simple hit-miss structuring elements
  *          SELA    *selaAddHitMiss()
  *               Isolated foreground pixel
  *               Horizontal and vertical edges
  *               Slanted edge
+ *               Corners
  *
+ *      Structuring elements for comparing with DWA operations
  *          SELA    *selaAddDwaLinear()
  *          SELA    *selaAddDwaCombs()
+ *
+ *      Structuring elements for the intersection of lines
  *          SELA    *selaAddCrossJunctions()
  *          SELA    *selaAddTJunctions()
+ *
+ *      Structuring elements for connectivity-preserving thinning operations
+ *          SELA    *sela4ccThin()
+ *          SELA    *sela8ccThin()
+ *          SELA    *sela4and8ccThin()
+ * </pre>
  */
 
 #include <math.h>
 #include "allheaders.h"
 
-    /* MSVC can't handle arrays dimensioned by static const integers */
-#define  L_BUF_SIZE  512
+static const l_int32  L_BUF_SIZE = 512;
 
     /* Linear brick sel sizes, including all those that are required
      * for decomposable sels up to size 63. */
 static const l_int32  num_linear = 25;
-static const l_int32  basic_linear[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 21, 25, 30, 31, 35, 40, 41, 45, 50, 51};
+static const l_int32  basic_linear[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+       12, 13, 14, 15, 20, 21, 25, 30, 31, 35, 40, 41, 45, 50, 51};
 
 
+/* ------------------------------------------------------------------- *
+ *                    Basic brick structuring elements                 *
+ * ------------------------------------------------------------------- */
 /*!
- *  selaAddBasic()
+ * \brief   selaAddBasic()
  *
- *      Input:  sela (<optional>)
- *      Return: sela with additional sels, or null on error
+ * \param[in]    sela [optional]
+ * \return  sela with additional sels, or NULL on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) Adds the following sels:
- *            - all linear (horiz, vert) brick sels that are
+ *            ~ all linear (horiz, vert) brick sels that are
  *              necessary for decomposable sels up to size 63
- *            - square brick sels up to size 10
- *            - 4 diagonal sels
+ *            ~ square brick sels up to size 10
+ *            ~ 4 diagonal sels
+ * </pre>
  */
 SELA *
 selaAddBasic(SELA  *sela)
@@ -129,8 +146,7 @@ SEL     *sel;
 
         /*  Diagonal, slope +, size 5 */
     sel = selCreate(5, 5, "sel_5dp");
-    sel->cy = 2;
-    sel->cx = 2;
+    selSetOrigin(sel, 2, 2);
     selSetElement(sel, 0, 4, 1);
     selSetElement(sel, 1, 3, 1);
     selSetElement(sel, 2, 2, 1);
@@ -140,8 +156,7 @@ SEL     *sel;
 
         /*  Diagonal, slope -, size 5 */
     sel = selCreate(5, 5, "sel_5dm");
-    sel->cy = 2;
-    sel->cx = 2;
+    selSetOrigin(sel, 2, 2);
     selSetElement(sel, 0, 0, 1);
     selSetElement(sel, 1, 1, 1);
     selSetElement(sel, 2, 2, 1);
@@ -153,11 +168,14 @@ SEL     *sel;
 }
 
 
+/* ------------------------------------------------------------------- *
+ *                 Simple hit-miss structuring elements                *
+ * ------------------------------------------------------------------- */
 /*!
- *  selaAddHitMiss()
+ * \brief   selaAddHitMiss()
  *
- *      Input:  sela  (<optional>)
- *      Return: sela with additional sels, or null on error
+ * \param[in]    sela  [optional]
+ * \return  sela with additional sels, or NULL on error
  */
 SELA *
 selaAddHitMiss(SELA  *sela)
@@ -180,67 +198,122 @@ SEL  *sel;
     /*--------------------------------------------------------------*
      *                   Isolated foreground pixel                  *
      *--------------------------------------------------------------*/
-    sel = selCreateBrick(3, 3, 1, 1, 2);
-    selSetElement(sel, 1, 1, 1);
+    sel = selCreateBrick(3, 3, 1, 1, SEL_MISS);
+    selSetElement(sel, 1, 1, SEL_HIT);
     selaAddSel(sela, sel, "sel_3hm", 0);
-
 
     /*--------------------------------------------------------------*
      *                Horizontal and vertical edges                 *
      *--------------------------------------------------------------*/
-    sel = selCreateBrick(2, 3, 0, 1, 1);
-    selSetElement(sel, 1, 0, 2);
-    selSetElement(sel, 1, 1, 2);
-    selSetElement(sel, 1, 2, 2);
+    sel = selCreateBrick(2, 3, 0, 1, SEL_HIT);
+    selSetElement(sel, 1, 0, SEL_MISS);
+    selSetElement(sel, 1, 1, SEL_MISS);
+    selSetElement(sel, 1, 2, SEL_MISS);
     selaAddSel(sela, sel, "sel_3de", 0);
 
-    sel = selCreateBrick(2, 3, 1, 1, 1);
-    selSetElement(sel, 0, 0, 2);
-    selSetElement(sel, 0, 1, 2);
-    selSetElement(sel, 0, 2, 2);
+    sel = selCreateBrick(2, 3, 1, 1, SEL_HIT);
+    selSetElement(sel, 0, 0, SEL_MISS);
+    selSetElement(sel, 0, 1, SEL_MISS);
+    selSetElement(sel, 0, 2, SEL_MISS);
     selaAddSel(sela, sel, "sel_3ue", 0);
 
-    sel = selCreateBrick(3, 2, 1, 0, 1);
-    selSetElement(sel, 0, 1, 2);
-    selSetElement(sel, 1, 1, 2);
-    selSetElement(sel, 2, 1, 2);
+    sel = selCreateBrick(3, 2, 1, 0, SEL_HIT);
+    selSetElement(sel, 0, 1, SEL_MISS);
+    selSetElement(sel, 1, 1, SEL_MISS);
+    selSetElement(sel, 2, 1, SEL_MISS);
     selaAddSel(sela, sel, "sel_3re", 0);
 
-    sel = selCreateBrick(3, 2, 1, 1, 1);
-    selSetElement(sel, 0, 0, 2);
-    selSetElement(sel, 1, 0, 2);
-    selSetElement(sel, 2, 0, 2);
+    sel = selCreateBrick(3, 2, 1, 1, SEL_HIT);
+    selSetElement(sel, 0, 0, SEL_MISS);
+    selSetElement(sel, 1, 0, SEL_MISS);
+    selSetElement(sel, 2, 0, SEL_MISS);
     selaAddSel(sela, sel, "sel_3le", 0);
 
+    /*--------------------------------------------------------------*
+     *                        Slanted edge                          *
+     *--------------------------------------------------------------*/
+    sel = selCreateBrick(13, 6, 6, 2, SEL_DONT_CARE);
+    selSetElement(sel, 0, 3, SEL_MISS);
+    selSetElement(sel, 0, 5, SEL_HIT);
+    selSetElement(sel, 4, 2, SEL_MISS);
+    selSetElement(sel, 4, 4, SEL_HIT);
+    selSetElement(sel, 8, 1, SEL_MISS);
+    selSetElement(sel, 8, 3, SEL_HIT);
+    selSetElement(sel, 12, 0, SEL_MISS);
+    selSetElement(sel, 12, 2, SEL_HIT);
+    selaAddSel(sela, sel, "sel_sl1", 0);
 
     /*--------------------------------------------------------------*
-     *                       Slanted edge                           *
+     *                           Corners                            *
+     *  This allows for up to 3 missing edge pixels at the corner   *
      *--------------------------------------------------------------*/
-    sel = selCreateBrick(13, 6, 6, 2, 0);
-    selSetElement(sel, 0, 3, 2);
-    selSetElement(sel, 0, 5, 1);
-    selSetElement(sel, 4, 2, 2);
-    selSetElement(sel, 4, 4, 1);
-    selSetElement(sel, 8, 1, 2);
-    selSetElement(sel, 8, 3, 1);
-    selSetElement(sel, 12, 0, 2);
-    selSetElement(sel, 12, 2, 1);
-    selaAddSel(sela, sel, "sel_sl1", 0);
+    sel = selCreateBrick(4, 4, 1, 1, SEL_MISS);
+    selSetElement(sel, 1, 1, SEL_DONT_CARE);
+    selSetElement(sel, 1, 2, SEL_DONT_CARE);
+    selSetElement(sel, 2, 1, SEL_DONT_CARE);
+    selSetElement(sel, 1, 3, SEL_HIT);
+    selSetElement(sel, 2, 2, SEL_HIT);
+    selSetElement(sel, 2, 3, SEL_HIT);
+    selSetElement(sel, 3, 1, SEL_HIT);
+    selSetElement(sel, 3, 2, SEL_HIT);
+    selSetElement(sel, 3, 3, SEL_HIT);
+    selaAddSel(sela, sel, "sel_ulc", 0);
+
+    sel = selCreateBrick(4, 4, 1, 2, SEL_MISS);
+    selSetElement(sel, 1, 1, SEL_DONT_CARE);
+    selSetElement(sel, 1, 2, SEL_DONT_CARE);
+    selSetElement(sel, 2, 2, SEL_DONT_CARE);
+    selSetElement(sel, 1, 0, SEL_HIT);
+    selSetElement(sel, 2, 0, SEL_HIT);
+    selSetElement(sel, 2, 1, SEL_HIT);
+    selSetElement(sel, 3, 0, SEL_HIT);
+    selSetElement(sel, 3, 1, SEL_HIT);
+    selSetElement(sel, 3, 2, SEL_HIT);
+    selaAddSel(sela, sel, "sel_urc", 0);
+
+    sel = selCreateBrick(4, 4, 2, 1, SEL_MISS);
+    selSetElement(sel, 1, 1, SEL_DONT_CARE);
+    selSetElement(sel, 2, 1, SEL_DONT_CARE);
+    selSetElement(sel, 2, 2, SEL_DONT_CARE);
+    selSetElement(sel, 0, 1, SEL_HIT);
+    selSetElement(sel, 0, 2, SEL_HIT);
+    selSetElement(sel, 0, 3, SEL_HIT);
+    selSetElement(sel, 1, 2, SEL_HIT);
+    selSetElement(sel, 1, 3, SEL_HIT);
+    selSetElement(sel, 2, 3, SEL_HIT);
+    selaAddSel(sela, sel, "sel_llc", 0);
+
+    sel = selCreateBrick(4, 4, 2, 2, SEL_MISS);
+    selSetElement(sel, 1, 2, SEL_DONT_CARE);
+    selSetElement(sel, 2, 1, SEL_DONT_CARE);
+    selSetElement(sel, 2, 2, SEL_DONT_CARE);
+    selSetElement(sel, 0, 0, SEL_HIT);
+    selSetElement(sel, 0, 1, SEL_HIT);
+    selSetElement(sel, 0, 2, SEL_HIT);
+    selSetElement(sel, 1, 0, SEL_HIT);
+    selSetElement(sel, 1, 1, SEL_HIT);
+    selSetElement(sel, 2, 0, SEL_HIT);
+    selaAddSel(sela, sel, "sel_lrc", 0);
 
     return sela;
 }
 
 
+/* ------------------------------------------------------------------- *
+ *        Structuring elements for comparing with DWA operations       *
+ * ------------------------------------------------------------------- */
 /*!
- *  selaAddDwaLinear()
+ * \brief   selaAddDwaLinear()
  *
- *      Input:  sela (<optional>)
- *      Return: sela with additional sels, or null on error
+ * \param[in]    sela [optional]
+ * \return  sela with additional sels, or NULL on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) Adds all linear (horizontal, vertical) sels from
  *          2 to 63 pixels in length, which are the sizes over
  *          which dwa code can be generated.
+ * </pre>
  */
 SELA *
 selaAddDwaLinear(SELA  *sela)
@@ -271,16 +344,18 @@ SEL     *sel;
 
 
 /*!
- *  selaAddDwaCombs()
+ * \brief   selaAddDwaCombs()
  *
- *      Input:  sela (<optional>)
- *      Return: sela with additional sels, or null on error
+ * \param[in]    sela [optional]
+ * \return  sela with additional sels, or NULL on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) Adds all comb (horizontal, vertical) Sels that are
  *          used in composite linear morphological operations
  *          up to 63 pixels in length, which are the sizes over
  *          which dwa code can be generated.
+ * </pre>
  */
 SELA *
 selaAddDwaCombs(SELA  *sela)
@@ -315,29 +390,34 @@ SEL     *selh, *selv;
 }
 
 
+/* ------------------------------------------------------------------- *
+ *          Structuring elements for the intersection of lines         *
+ * ------------------------------------------------------------------- */
 /*!
- *  selaAddCrossJunctions()
+ * \brief   selaAddCrossJunctions()
  *
- *      Input:  sela (<optional>)
- *              hlsize (length of each line of hits from origin)
- *              mdist (distance of misses from the origin)
- *              norient (number of orientations; max of 8)
- *              debugflag (1 for debug output)
- *      Return: sela with additional sels, or null on error
+ * \param[in]    sela [optional]
+ * \param[in]    hlsize length of each line of hits from origin
+ * \param[in]    mdist distance of misses from the origin
+ * \param[in]    norient number of orientations; max of 8
+ * \param[in]    debugflag 1 for debug output
+ * \return  sela with additional sels, or NULL on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) Adds hitmiss Sels for the intersection of two lines.
  *          If the lines are very thin, they must be nearly orthogonal
  *          to register.
- *      (2) The number of Sels generated is equal to @norient.
- *      (3) If @norient == 2, this generates 2 Sels of crosses, each with
+ *      (2) The number of Sels generated is equal to %norient.
+ *      (3) If %norient == 2, this generates 2 Sels of crosses, each with
  *          two perpendicular lines of hits.  One Sel has horizontal and
  *          vertical hits; the other has hits along lines at +-45 degrees.
- *          Likewise, if @norient == 3, this generates 3 Sels of crosses
+ *          Likewise, if %norient == 3, this generates 3 Sels of crosses
  *          oriented at 30 degrees with each other.
- *      (4) It is suggested that @hlsize be chosen at least 1 greater
- *          than @mdist.  Try values of (@hlsize, @mdist) such as
+ *      (4) It is suggested that %hlsize be chosen at least 1 greater
+ *          than %mdist.  Try values of (%hlsize, %mdist) such as
  *          (6,5), (7,6), (8,7), (9,7), etc.
+ * </pre>
  */
 SELA *
 selaAddCrossJunctions(SELA      *sela,
@@ -390,9 +470,9 @@ SEL       *sel;
         pta2 = generatePtaLineFromPt(xc, yc, hlsize + 1, radang + halfpi);
         pta3 = generatePtaLineFromPt(xc, yc, hlsize + 1, radang + pi);
         pta4 = generatePtaLineFromPt(xc, yc, hlsize + 1, radang + pi + halfpi);
-        ptaJoin(pta1, pta2, 0, 0);
-        ptaJoin(pta1, pta3, 0, 0);
-        ptaJoin(pta1, pta4, 0, 0);
+        ptaJoin(pta1, pta2, 0, -1);
+        ptaJoin(pta1, pta3, 0, -1);
+        ptaJoin(pta1, pta4, 0, -1);
         pixRenderPta(pixm, pta1, L_SET_PIXELS);
         pixPaintThroughMask(pixc, pixm, 0, 0, 0x00ff0000);
         ptaDestroy(&pta1);
@@ -412,7 +492,7 @@ SEL       *sel;
 
             /* Generate the sel */
         sel = selCreateFromColorPix(pixc, NULL);
-        sprintf(name, "sel_cross_%d", i);
+        snprintf(name, sizeof(name), "sel_cross_%d", i);
         selaAddSel(sela, sel, name, 0);
 
         if (debugflag) {
@@ -425,13 +505,14 @@ SEL       *sel;
 
     if (debugflag) {
         l_int32  w;
+        lept_mkdir("lept/sel");
         pixaGetPixDimensions(pixa, 0, &w, NULL, NULL);
         pixt = pixaDisplayTiledAndScaled(pixa, 32, w, 1, 0, 10, 2);
-        pixWriteTempfile("/tmp", "xsel1.png", pixt, IFF_PNG, 0);
+        pixWrite("/tmp/lept/sel/xsel1.png", pixt, IFF_PNG);
         pixDisplay(pixt, 0, 100);
         pixDestroy(&pixt);
         pixt = selaDisplayInPix(sela, 15, 2, 20, 1);
-        pixWriteTempfile("/tmp", "xsel2.png", pixt, IFF_PNG, 0);
+        pixWrite("/tmp/lept/sel/xsel2.png", pixt, IFF_PNG);
         pixDisplay(pixt, 500, 100);
         pixDestroy(&pixt);
         selaWriteStream(stderr, sela);
@@ -443,23 +524,25 @@ SEL       *sel;
 
 
 /*!
- *  selaAddTJunctions()
+ * \brief   selaAddTJunctions()
  *
- *      Input:  sela (<optional>)
- *              hlsize (length of each line of hits from origin)
- *              mdist (distance of misses from the origin)
- *              norient (number of orientations; max of 8)
- *              debugflag (1 for debug output)
- *      Return: sela with additional sels, or null on error
+ * \param[in]    sela [optional]
+ * \param[in]    hlsize length of each line of hits from origin
+ * \param[in]    mdist distance of misses from the origin
+ * \param[in]    norient number of orientations; max of 8
+ * \param[in]    debugflag 1 for debug output
+ * \return  sela with additional sels, or NULL on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) Adds hitmiss Sels for the T-junction of two lines.
  *          If the lines are very thin, they must be nearly orthogonal
  *          to register.
- *      (2) The number of Sels generated is 4 * @norient.
- *      (3) It is suggested that @hlsize be chosen at least 1 greater
- *          than @mdist.  Try values of (@hlsize, @mdist) such as
+ *      (2) The number of Sels generated is 4 * %norient.
+ *      (3) It is suggested that %hlsize be chosen at least 1 greater
+ *          than %mdist.  Try values of (%hlsize, %mdist) such as
  *          (6,5), (7,6), (8,7), (9,7), etc.
+ * </pre>
  */
 SELA *
 selaAddTJunctions(SELA      *sela,
@@ -515,8 +598,8 @@ SEL       *sel;
                                          jang + radang + halfpi);
             pta3 = generatePtaLineFromPt(xc, yc, hlsize + 1,
                                          jang + radang + pi);
-            ptaJoin(pta1, pta2, 0, 0);
-            ptaJoin(pta1, pta3, 0, 0);
+            ptaJoin(pta1, pta2, 0, -1);
+            ptaJoin(pta1, pta3, 0, -1);
             pixRenderPta(pixm, pta1, L_SET_PIXELS);
             pixPaintThroughMask(pixc, pixm, 0, 0, 0x00ff0000);
             ptaDestroy(&pta1);
@@ -540,7 +623,7 @@ SEL       *sel;
 
                 /* Generate the sel */
             sel = selCreateFromColorPix(pixc, NULL);
-            sprintf(name, "sel_cross_%d", 4 * i + j);
+            snprintf(name, sizeof(name), "sel_cross_%d", 4 * i + j);
             selaAddSel(sela, sel, name, 0);
 
             if (debugflag) {
@@ -554,13 +637,14 @@ SEL       *sel;
 
     if (debugflag) {
         l_int32  w;
+        lept_mkdir("lept/sel");
         pixaGetPixDimensions(pixa, 0, &w, NULL, NULL);
         pixt = pixaDisplayTiledAndScaled(pixa, 32, w, 4, 0, 10, 2);
-        pixWriteTempfile("/tmp", "tsel1.png", pixt, IFF_PNG, 0);
+        pixWrite("/tmp/lept/sel/tsel1.png", pixt, IFF_PNG);
         pixDisplay(pixt, 0, 100);
         pixDestroy(&pixt);
         pixt = selaDisplayInPix(sela, 15, 2, 20, 4);
-        pixWriteTempfile("/tmp", "tsel2.png", pixt, IFF_PNG, 0);
+        pixWrite("/tmp/lept/sel/tsel2.png", pixt, IFF_PNG);
         pixDisplay(pixt, 500, 100);
         pixDestroy(&pixt);
         selaWriteStream(stderr, sela);
@@ -569,3 +653,192 @@ SEL       *sel;
 
     return sela;
 }
+
+
+/* -------------------------------------------------------------------------- *
+ *    Structuring elements for connectivity-preserving thinning operations    *
+ * -------------------------------------------------------------------------- */
+
+    /* ------------------------------------------------------------
+     * These sels (and their rotated counterparts) are the useful
+     * 3x3 Sels for thinning.   The notation is based on
+     * "Connectivity-preserving morphological image transformations,"
+     * a version of which can be found at
+     *           http://www.leptonica.com/papers/conn.pdf
+     * ------------------------------------------------------------ */
+
+    /* Sels for 4-connected thinning */
+static const char *sel_4_1 = "  x"
+                             "oCx"
+                             "  x";
+static const char *sel_4_2 = "  x"
+                             "oCx"
+                             " o ";
+static const char *sel_4_3 = " o "
+                             "oCx"
+                             "  x";
+static const char *sel_4_4 = " o "
+                             "oCx"
+                             " o ";
+static const char *sel_4_5 = " ox"
+                             "oCx"
+                             " o ";
+static const char *sel_4_6 = " o "
+                             "oCx"
+                             " ox";
+static const char *sel_4_7 = " xx"
+                             "oCx"
+                             " o ";
+static const char *sel_4_8 = "  x"
+                             "oCx"
+                             "o x";
+static const char *sel_4_9 = "o x"
+                             "oCx"
+                             "  x";
+
+    /* Sels for 8-connected thinning */
+static const char *sel_8_1 = " x "
+                             "oCx"
+                             " x ";
+static const char *sel_8_2 = " x "
+                             "oCx"
+                             "o  ";
+static const char *sel_8_3 = "o  "
+                             "oCx"
+                             " x ";
+static const char *sel_8_4 = "o  "
+                             "oCx"
+                             "o  ";
+static const char *sel_8_5 = "o x"
+                             "oCx"
+                             "o  ";
+static const char *sel_8_6 = "o  "
+                             "oCx"
+                             "o x";
+static const char *sel_8_7 = " x "
+                             "oCx"
+                             "oo ";
+static const char *sel_8_8 = " x "
+                             "oCx"
+                             "ox ";
+static const char *sel_8_9 = "ox "
+                             "oCx"
+                             " x ";
+
+    /* Sels for both 4 and 8-connected thinning */
+static const char *sel_48_1 = " xx"
+                              "oCx"
+                              "oo ";
+static const char *sel_48_2 = "o x"
+                              "oCx"
+                              "o x";
+
+
+/*!
+ * \brief   sela4ccThin()
+ *
+ * \param[in]    sela [optional]
+ * \return  sela with additional sels, or NULL on error
+ *
+ * <pre>
+ * Notes:
+ *      (1) Adds the 9 basic sels for 4-cc thinning.
+ * </pre>
+ */
+SELA *
+sela4ccThin(SELA  *sela)
+{
+SEL  *sel;
+
+    if (!sela) sela = selaCreate(9);
+
+    sel = selCreateFromString(sel_4_1, 3, 3, "sel_4_1");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_4_2, 3, 3, "sel_4_2");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_4_3, 3, 3, "sel_4_3");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_4_4, 3, 3, "sel_4_4");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_4_5, 3, 3, "sel_4_5");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_4_6, 3, 3, "sel_4_6");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_4_7, 3, 3, "sel_4_7");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_4_8, 3, 3, "sel_4_8");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_4_9, 3, 3, "sel_4_9");
+    selaAddSel(sela, sel, NULL, 0);
+
+    return sela;
+}
+
+
+/*!
+ * \brief   sela8ccThin()
+ *
+ * \param[in]    sela [optional]
+ * \return  sela with additional sels, or NULL on error
+ *
+ * <pre>
+ * Notes:
+ *      (1) Adds the 9 basic sels for 8-cc thinning.
+ * </pre>
+ */
+SELA *
+sela8ccThin(SELA  *sela)
+{
+SEL  *sel;
+
+    if (!sela) sela = selaCreate(9);
+
+    sel = selCreateFromString(sel_8_1, 3, 3, "sel_8_1");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_8_2, 3, 3, "sel_8_2");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_8_3, 3, 3, "sel_8_3");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_8_4, 3, 3, "sel_8_4");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_8_5, 3, 3, "sel_8_5");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_8_6, 3, 3, "sel_8_6");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_8_7, 3, 3, "sel_8_7");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_8_8, 3, 3, "sel_8_8");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_8_9, 3, 3, "sel_8_9");
+    selaAddSel(sela, sel, NULL, 0);
+
+    return sela;
+}
+
+
+/*!
+ * \brief   sela4and8ccThin()
+ *
+ * \param[in]    sela [optional]
+ * \return  sela with additional sels, or NULL on error
+ *
+ * <pre>
+ * Notes:
+ *      (1) Adds the 2 basic sels for either 4-cc or 8-cc thinning.
+ * </pre>
+ */
+SELA *
+sela4and8ccThin(SELA  *sela)
+{
+SEL  *sel;
+
+    if (!sela) sela = selaCreate(2);
+
+    sel = selCreateFromString(sel_48_1, 3, 3, "sel_48_1");
+    selaAddSel(sela, sel, NULL, 0);
+    sel = selCreateFromString(sel_48_2, 3, 3, "sel_48_2");
+    selaAddSel(sela, sel, NULL, 0);
+
+    return sela;
+}
+

@@ -23,14 +23,9 @@
 
 #include "clst.h"
 #include "coutln.h"
+#include "hashfn.h"
 #include "rect.h"
 #include "scrollview.h"
-
-// Some code is dependent upon leptonica. If you don't have it,
-// you don't get this functionality.
-#ifdef HAVE_CONFIG_H
-#include "config_auto.h"
-#endif
 
 #include "allheaders.h"
 
@@ -132,7 +127,7 @@ class IntGrid : public GridBase {
     grid_[grid_y * gridwidth_ + grid_x] = value;
   }
   // Returns true if more than half the area of the rect is covered by grid
-  // cells that are over the theshold.
+  // cells that are over the threshold.
   bool RectMostlyOverThreshold(const TBOX& rect, int threshold) const;
 
   // Returns true if any cell value in the given rectangle is zero.
@@ -228,6 +223,14 @@ template<class BBC, class BBC_CLIST, class BBC_C_IT> class BBGrid
  private:
 };
 
+// Hash functor for generic pointers.
+template<typename T> struct PtrHash {
+  size_t operator()(const T* ptr) const {
+    return reinterpret_cast<size_t>(ptr) / sizeof(T);
+  }
+};
+
+
 // The GridSearch class enables neighbourhood searching on a BBGrid.
 template<class BBC, class BBC_CLIST, class BBC_C_IT> class GridSearch {
  public:
@@ -289,7 +292,7 @@ template<class BBC, class BBC_CLIST, class BBC_C_IT> class GridSearch {
   // Return the next bbox in the search or NULL if done.
   BBC* NextFullSearch();
 
-  // Start a new radius search. Will search in a spiral upto a
+  // Start a new radius search. Will search in a spiral up to a
   // given maximum radius in grid cells from the given center in pixels.
   void StartRadSearch(int x, int y, int max_radius);
   // Return the next bbox in the radius search or NULL if the
@@ -360,8 +363,8 @@ template<class BBC, class BBC_CLIST, class BBC_C_IT> class GridSearch {
   BBC* next_return_;  // Current value of it_.data() used for repositioning.
   // An iterator over the list at (x_, y_) in the grid_.
   BBC_C_IT it_;
-  // List of unique returned elements used when unique_mode_ is true.
-  BBC_CLIST returns_;
+  // Set of unique returned elements used when unique_mode_ is true.
+  TessHashSet<BBC*, PtrHash<BBC> > returns_;
 };
 
 // Sort function to sort a BBC by bounding_box().left().
@@ -620,7 +623,7 @@ void BBGrid<BBC, BBC_CLIST, BBC_C_IT>::DisplayBoxes(ScrollView* tab_win) {
   gsearch.StartFullSearch();
   BBC* bbox;
   while ((bbox = gsearch.NextFullSearch()) != NULL) {
-    TBOX box = bbox->bounding_box();
+    const TBOX& box = bbox->bounding_box();
     int left_x = box.left();
     int right_x = box.right();
     int top_y = box.top();
@@ -734,8 +737,9 @@ BBC* GridSearch<BBC, BBC_CLIST, BBC_C_IT>::NextRadSearch() {
         SetIterator();
     }
     CommonNext();
-  } while (unique_mode_ &&
-           !returns_.add_sorted(SortByBoxLeft<BBC>, true, previous_return_));
+  } while (unique_mode_ && returns_.find(previous_return_) != returns_.end());
+  if (unique_mode_)
+    returns_.insert(previous_return_);
   return previous_return_;
 }
 
@@ -746,7 +750,7 @@ void GridSearch<BBC, BBC_CLIST, BBC_C_IT>::StartSideSearch(int x,
                                                            int ymin, int ymax) {
   // Right search records the x in x_origin_, the ymax in y_origin_
   // and the size of the vertical strip to search in radius_.
-  // To guarantee finding overlapping objects of upto twice the
+  // To guarantee finding overlapping objects of up to twice the
   // given size, double the height.
   radius_ = ((ymax - ymin) * 2 + grid_->gridsize_ - 1) / grid_->gridsize_;
   rad_index_ = 0;
@@ -775,8 +779,9 @@ BBC* GridSearch<BBC, BBC_CLIST, BBC_C_IT>::NextSideSearch(bool right_to_left) {
         SetIterator();
     }
     CommonNext();
-  } while (unique_mode_ &&
-           !returns_.add_sorted(SortByBoxLeft<BBC>, true, previous_return_));
+  } while (unique_mode_ && returns_.find(previous_return_) != returns_.end());
+  if (unique_mode_)
+    returns_.insert(previous_return_);
   return previous_return_;
 }
 
@@ -816,8 +821,9 @@ BBC* GridSearch<BBC, BBC_CLIST, BBC_C_IT>::NextVerticalSearch(
         SetIterator();
     }
     CommonNext();
-  } while (unique_mode_ &&
-           !returns_.add_sorted(SortByBoxLeft<BBC>, true, previous_return_));
+  } while (unique_mode_ && returns_.find(previous_return_) != returns_.end());
+  if (unique_mode_)
+    returns_.insert(previous_return_);
   return previous_return_;
 }
 
@@ -850,8 +856,9 @@ BBC* GridSearch<BBC, BBC_CLIST, BBC_C_IT>::NextRectSearch() {
     }
     CommonNext();
   } while (!rect_.overlap(previous_return_->bounding_box()) ||
-           (unique_mode_ &&
-            !returns_.add_sorted(SortByBoxLeft<BBC>, true, previous_return_)));
+           (unique_mode_ && returns_.find(previous_return_) != returns_.end()));
+  if (unique_mode_)
+    returns_.insert(previous_return_);
   return previous_return_;
 }
 
@@ -888,7 +895,7 @@ template<class BBC, class BBC_CLIST, class BBC_C_IT>
 void GridSearch<BBC, BBC_CLIST, BBC_C_IT>::RepositionIterator() {
   // Something was deleted, so we have little choice but to clear the
   // returns list.
-  returns_.shallow_clear();
+  returns_.clear();
   // Reset the iterator back to one past the previous return.
   // If the previous_return_ is no longer in the list, then
   // next_return_ serves as a backup.
@@ -921,7 +928,7 @@ void GridSearch<BBC, BBC_CLIST, BBC_C_IT>::CommonStart(int x, int y) {
   SetIterator();
   previous_return_ = NULL;
   next_return_ = it_.empty() ? NULL : it_.data();
-  returns_.shallow_clear();
+  returns_.clear();
 }
 
 // Factored out helper to complete a next search.

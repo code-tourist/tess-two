@@ -18,6 +18,7 @@ package com.googlecode.leptonica.android;
 
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
+import android.support.annotation.IntRange;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,8 +28,11 @@ import java.io.IOException;
  *
  * @author alanv@google.com (Alan Viverette)
  */
+@SuppressWarnings("WeakerAccess")
 public class JpegIO {
     static {
+        System.loadLibrary("jpgt");
+        System.loadLibrary("pngt");
         System.loadLibrary("lept");
     }
 
@@ -42,7 +46,7 @@ public class JpegIO {
      * Returns a compressed JPEG byte representation of this Pix using default
      * parameters.
      *
-     * @param pixs
+     * @param pixs A source Pix image.
      * @return a compressed JPEG byte array representation of the Pix
      */
     public static byte[] compressToJpeg(Pix pixs) {
@@ -57,7 +61,8 @@ public class JpegIO {
      * @param progressive Whether to use progressive compression.
      * @return a compressed JPEG byte array representation of the Pix
      */
-    public static byte[] compressToJpeg(Pix pixs, int quality, boolean progressive) {
+    public static byte[] compressToJpeg(Pix pixs, @IntRange(from=0, to=100) int quality,
+                                        boolean progressive) {
         if (pixs == null)
             throw new IllegalArgumentException("Source pix must be non-null");
         if (quality < 0 || quality > 100)
@@ -84,5 +89,5 @@ public class JpegIO {
     // ***************
 
     private static native byte[] nativeCompressToJpeg(
-            int nativePix, int quality, boolean progressive);
+            long nativePix, int quality, boolean progressive);
 }

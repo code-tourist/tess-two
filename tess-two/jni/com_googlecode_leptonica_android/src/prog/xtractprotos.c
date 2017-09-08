@@ -78,23 +78,23 @@
  *
  *   The xtractprotos version number, defined below, is incremented
  *   whenever a new version is made.
+ *
+ *   Note: this uses cpp to preprocess the input.  (The name of the cpp
+ *   tempfile is constructed below.  It has a "." in the tail, which
+ *   Cygwin needs to prevent it from appending ".exe" to the filename.)
  */
 
 #include <string.h>
 #include "allheaders.h"
 
-    /* MS VC++ can't handle array initialization in C with static consts */
-#define  L_BUF_SIZE   512
-
-    /* Cygwin needs any extension, or it will append ".exe" to the filename! */
-static const char *tempfile = "/tmp/temp_cpp_output.txt";
+static const l_int32  L_BUF_SIZE = 512;
 static const char *version = "1.5";
 
 
-main(int    argc,
-     char **argv)
+int main(int    argc,
+         char **argv)
 {
-char        *filein, *str, *prestring, *outprotos, *protostr;
+char        *filein, *str, *tempfile, *prestring, *outprotos, *protostr;
 const char  *spacestr = " ";
 char         buf[L_BUF_SIZE];
 l_uint8     *allheaders;
@@ -130,15 +130,14 @@ static char  mainName[] = "xtractprotos";
                     fprintf(stderr, "parse failure for prestring\n");
                     return 1;
                 }
-                if ((len = strlen(buf)) > L_BUF_SIZE - 3)
-                    L_WARNING("prestring too large; omitting!", mainName);
-                else {
+                if ((len = strlen(buf)) > L_BUF_SIZE - 3) {
+                    L_WARNING("prestring too large; omitting!\n", mainName);
+                } else {
                     buf[len] = ' ';
                     buf[len + 1] = '\0';
                     prestring = stringNew(buf);
                 }
-            }
-            else if (!strncmp(argv[i], "-protos", 7)) {
+            } else if (!strncmp(argv[i], "-protos", 7)) {
                 nflags++;
                 ret = sscanf(argv[i] + 1, "protos=%s", buf);
                 if (ret != 1) {
@@ -165,15 +164,15 @@ static char  mainName[] = "xtractprotos";
 
         /* First the extern C head */
     sa = sarrayCreate(0);
-    sarrayAddString(sa, (char *)"/*", 1);
+    sarrayAddString(sa, (char *)"/*", L_COPY);
     snprintf(buf, L_BUF_SIZE,
              " *  These prototypes were autogen'd by xtractprotos, v. %s",
              version);
-    sarrayAddString(sa, buf, 1);
-    sarrayAddString(sa, (char *)" */", 1);
-    sarrayAddString(sa, (char *)"#ifdef __cplusplus", 1);
-    sarrayAddString(sa, (char *)"extern \"C\" {", 1);
-    sarrayAddString(sa, (char *)"#endif  /* __cplusplus */\n", 1);
+    sarrayAddString(sa, buf, L_COPY);
+    sarrayAddString(sa, (char *)" */", L_COPY);
+    sarrayAddString(sa, (char *)"#ifdef __cplusplus", L_COPY);
+    sarrayAddString(sa, (char *)"extern \"C\" {", L_COPY);
+    sarrayAddString(sa, (char *)"#endif  /* __cplusplus */\n", L_COPY);
     str = sarrayToString(sa, 1);
     l_byteaAppendString(ba, str);
     lept_free(str);
@@ -182,35 +181,41 @@ static char  mainName[] = "xtractprotos";
         /* Then the prototypes */
     firstfile = 1 + nflags;
     protos_added = FALSE;
+    if ((tempfile = l_makeTempFilename()) == NULL) {
+        fprintf(stderr, "failure to make a writeable temp file\n");
+        return 1;
+    }
     for (i = firstfile; i < argc; i++) {
         filein = argv[i];
-	len = strlen(filein);
-	if (filein[len - 1] == 'h')  /* skip .h files */
-	    continue;
-	snprintf(buf, L_BUF_SIZE, "cpp -ansi -DNO_PROTOS %s %s",
-	         filein, tempfile);
-	ret = system(buf);
-	if (ret) {
+        len = strlen(filein);
+        if (filein[len - 1] == 'h')  /* skip .h files */
+            continue;
+        snprintf(buf, L_BUF_SIZE, "cpp -ansi -DNO_PROTOS %s %s",
+                 filein, tempfile);
+        ret = system(buf);  /* cpp */
+        if (ret) {
             fprintf(stderr, "cpp failure for %s; continuing\n", filein);
-	    continue;
-	}
+            continue;
+        }
 
-	if ((str = parseForProtos(tempfile, prestring)) == NULL) {
+        if ((str = parseForProtos(tempfile, prestring)) == NULL) {
             fprintf(stderr, "parse failure for %s; continuing\n", filein);
-	    continue;
-	}
-	if (strlen(str) > 1) {  /* strlen(str) == 1 is a file without protos */
+            continue;
+        }
+        if (strlen(str) > 1) {  /* strlen(str) == 1 is a file without protos */
             l_byteaAppendString(ba, str);
             protos_added = TRUE;
         }
         lept_free(str);
     }
+    lept_rmfile(tempfile);
+    lept_free(tempfile);
 
         /* Lastly the extern C tail */
     sa = sarrayCreate(0);
-    sarrayAddString(sa, (char *)"\n#ifdef __cplusplus", 1);
-    sarrayAddString(sa, (char *)"}", 1);
-    sarrayAddString(sa, (char *)"#endif  /* __cplusplus */", 1);
+    sarrayAddString(sa, (char *)"\n#ifdef __cplusplus", L_COPY);
+    sarrayAddString(sa, (char *)"}", L_COPY);
+    sarrayAddString(sa, (char *)"#endif  /* __cplusplus */", L_COPY);
     str = sarrayToString(sa, 1);
     l_byteaAppendString(ba, str);
     lept_free(str);
@@ -242,9 +247,9 @@ static char  mainName[] = "xtractprotos";
         snprintf(buf, sizeof(buf), "#include \"%s\"\n", outprotos);
         l_byteaAppendString(ba, buf);
         l_binaryWrite(outprotos, "w", protostr, nbytes);
-    }
-    else
+    } else {
         l_byteaAppendString(ba, protostr);
+    }
     ba2 = l_byteaInitFromFile("allheaders_bot.txt");
     l_byteaJoin(ba, &ba2);
     l_byteaWrite("allheaders.h", ba, 0, 0);

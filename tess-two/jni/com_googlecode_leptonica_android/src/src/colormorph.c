@@ -24,8 +24,9 @@
  -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
-/*
- *  colormorph.c
+/*!
+ * \file colormorph.c
+ * <pre>
  *
  *      Top-level color morphological operations
  *
@@ -34,6 +35,7 @@
  *      Method: Algorithm by van Herk and Gil and Werman, 1992
  *              Apply grayscale morphological operations separately
  *              to each component.
+ * </pre>
  */
 
 #include "allheaders.h"
@@ -43,20 +45,22 @@
  *              Top-level color morphological operations           *
  *-----------------------------------------------------------------*/
 /*!
- *  pixColorMorph()
+ * \brief   pixColorMorph()
  *
- *      Input:  pixs
- *              type  (L_MORPH_DILATE, L_MORPH_ERODE, L_MORPH_OPEN,
- *                     or L_MORPH_CLOSE)
- *              hsize  (of Sel; must be odd; origin implicitly in center)
- *              vsize  (ditto)
- *      Return: pixd
+ * \param[in]    pixs
+ * \param[in]    type  L_MORPH_DILATE, L_MORPH_ERODE, L_MORPH_OPEN,
+ *                     or L_MORPH_CLOSE
+ * \param[in]    hsize  of Sel; must be odd; origin implicitly in center
+ * \param[in]    vsize  ditto
+ * \return  pixd
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) This does the morph operation on each component separately,
  *          and recombines the result.
  *      (2) Sel is a brick with all elements being hits.
  *      (3) If hsize = vsize = 1, just returns a copy.
+ * </pre>
  */
 PIX *
 pixColorMorph(PIX     *pixs,
@@ -78,11 +82,11 @@ PIX  *pixr, *pixg, *pixb, *pixrm, *pixgm, *pixbm, *pixd;
     if (hsize < 1 || vsize < 1)
         return (PIX *)ERROR_PTR("hsize or vsize < 1", procName, NULL);
     if ((hsize & 1) == 0 ) {
-        L_WARNING("horiz sel size must be odd; increasing by 1", procName);
+        L_WARNING("horiz sel size must be odd; increasing by 1\n", procName);
         hsize++;
     }
     if ((vsize & 1) == 0 ) {
-        L_WARNING("vert sel size must be odd; increasing by 1", procName);
+        L_WARNING("vert sel size must be odd; increasing by 1\n", procName);
         vsize++;
     }
 
@@ -96,18 +100,15 @@ PIX  *pixr, *pixg, *pixb, *pixrm, *pixgm, *pixbm, *pixd;
         pixrm = pixDilateGray(pixr, hsize, vsize);
         pixgm = pixDilateGray(pixg, hsize, vsize);
         pixbm = pixDilateGray(pixb, hsize, vsize);
-    }
-    else if (type == L_MORPH_ERODE) {
+    } else if (type == L_MORPH_ERODE) {
         pixrm = pixErodeGray(pixr, hsize, vsize);
         pixgm = pixErodeGray(pixg, hsize, vsize);
         pixbm = pixErodeGray(pixb, hsize, vsize);
-    }
-    else if (type == L_MORPH_OPEN) {
+    } else if (type == L_MORPH_OPEN) {
         pixrm = pixOpenGray(pixr, hsize, vsize);
         pixgm = pixOpenGray(pixg, hsize, vsize);
         pixbm = pixOpenGray(pixb, hsize, vsize);
-    }
-    else {   /* type == L_MORPH_CLOSE */
+    } else {   /* type == L_MORPH_CLOSE */
         pixrm = pixCloseGray(pixr, hsize, vsize);
         pixgm = pixCloseGray(pixg, hsize, vsize);
         pixbm = pixCloseGray(pixb, hsize, vsize);

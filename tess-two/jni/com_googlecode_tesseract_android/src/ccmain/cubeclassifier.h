@@ -23,6 +23,7 @@
 #define THIRD_PARTY_TESSERACT_CCMAIN_CUBECLASSIFIER_H_
 
 #include "shapeclassifier.h"
+#include "platform.h"
 
 namespace tesseract {
 
@@ -32,18 +33,19 @@ class ShapeTable;
 class TessClassifier;
 class Tesseract;
 class TrainingSample;
+struct UnicharRating;
 
 // Cube implementation of a ShapeClassifier.
-class CubeClassifier : public ShapeClassifier {
+class TESS_API CubeClassifier : public ShapeClassifier {
  public:
   explicit CubeClassifier(Tesseract* tesseract);
   virtual ~CubeClassifier();
 
   // Classifies the given [training] sample, writing to results.
   // See ShapeClassifier for a full description.
-  virtual int ClassifySample(const TrainingSample& sample, Pix* page_pix,
-                             int debug, int keep_this,
-                             GenericVector<ShapeRating>* results);
+  virtual int UnicharClassifySample(const TrainingSample& sample, Pix* page_pix,
+                                    int debug, UNICHAR_ID keep_this,
+                                    GenericVector<UnicharRating>* results);
   // Provides access to the ShapeTable that this classifier works with.
   virtual const ShapeTable* GetShapeTable() const;
 
@@ -54,16 +56,16 @@ class CubeClassifier : public ShapeClassifier {
 };
 
 // Combination of Tesseract class pruner with scoring by cube.
-class CubeTessClassifier : public ShapeClassifier {
+class TESS_API CubeTessClassifier : public ShapeClassifier {
  public:
   explicit CubeTessClassifier(Tesseract* tesseract);
   virtual ~CubeTessClassifier();
 
   // Classifies the given [training] sample, writing to results.
   // See ShapeClassifier for a full description.
-  virtual int ClassifySample(const TrainingSample& sample, Pix* page_pix,
-                             int debug, int keep_this,
-                             GenericVector<ShapeRating>* results);
+  virtual int UnicharClassifySample(const TrainingSample& sample, Pix* page_pix,
+                                    int debug, UNICHAR_ID keep_this,
+                                    GenericVector<UnicharRating>* results);
   // Provides access to the ShapeTable that this classifier works with.
   virtual const ShapeTable* GetShapeTable() const;
 

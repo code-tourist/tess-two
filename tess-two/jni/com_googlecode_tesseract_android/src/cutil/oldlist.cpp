@@ -206,8 +206,8 @@ void destroy_nodes(LIST list, void_dest destructor) {
     destructor = memfree;
 
   while (list != NIL_LIST) {
-    (*destructor) (first_node (list));
-    list = pop (list);
+    if (first_node(list) != NULL) (*destructor)(first_node(list));
+    list = pop(list);
   }
 }
 
@@ -401,13 +401,12 @@ LIST s_adjoin(LIST var_list, void *variable, int_compare compare) {
   return (push_last (var_list, variable));
 }
 
-
 /**********************************************************************
  *   s e a r c h
  *
  *  Search list, return NIL_LIST if not found. Return the list starting from
  *  the item if found.  The compare routine "is_equal" is passed in as
- *  the third paramter to this routine.   If the value NULL is supplied
+ *  the third parameter to this routine.   If the value NULL is supplied
  *  for is_equal, the is_key routine will be used.
  **********************************************************************/
 LIST search(LIST list, void *key, int_compare is_equal) {

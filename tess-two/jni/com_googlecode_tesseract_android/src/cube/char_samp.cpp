@@ -104,14 +104,12 @@ CharSamp *CharSamp::FromCharDumpFile(CachedFile *fp) {
     return NULL;
   }
   // the label is not null terminated in the file
-  if (val32 > 0) {
+  if (val32 > 0 && val32 < MAX_UINT32) {
     label32 = new char_32[val32 + 1];
-    if (label32 == NULL) {
-      return NULL;
-    }
     // read label
     if (fp->Read(label32, val32 * sizeof(*label32)) !=
         (val32 * sizeof(*label32))) {
+      delete [] label32;
       return NULL;
     }
     // null terminate
@@ -121,35 +119,40 @@ CharSamp *CharSamp::FromCharDumpFile(CachedFile *fp) {
   }
   // read coordinates
   if (fp->Read(&page, sizeof(page)) != sizeof(page)) {
+    delete [] label32;
     return NULL;
   }
   if (fp->Read(&left, sizeof(left)) != sizeof(left)) {
+    delete [] label32;
     return NULL;
   }
   if (fp->Read(&top, sizeof(top)) != sizeof(top)) {
+    delete [] label32;
     return NULL;
   }
   if (fp->Read(&first_char, sizeof(first_char)) != sizeof(first_char)) {
+    delete [] label32;
     return NULL;
   }
   if (fp->Read(&last_char, sizeof(last_char)) != sizeof(last_char)) {
+    delete [] label32;
     return NULL;
   }
   if (fp->Read(&norm_top, sizeof(norm_top)) != sizeof(norm_top)) {
+    delete [] label32;
     return NULL;
   }
   if (fp->Read(&norm_bottom, sizeof(norm_bottom)) != sizeof(norm_bottom)) {
+    delete [] label32;
     return NULL;
   }
   if (fp->Read(&norm_aspect_ratio, sizeof(norm_aspect_ratio)) !=
       sizeof(norm_aspect_ratio)) {
+    delete [] label32;
     return NULL;
   }
   // create the object
   CharSamp *char_samp = new CharSamp();
-  if (char_samp == NULL) {
-    return NULL;
-  }
   // init
   char_samp->label32_ = label32;
   char_samp->page_ = page;
@@ -193,14 +196,12 @@ CharSamp *CharSamp::FromCharDumpFile(FILE *fp) {
     return NULL;
   }
   // the label is not null terminated in the file
-  if (val32 > 0) {
+  if (val32 > 0 && val32 < MAX_UINT32) {
     label32 = new char_32[val32 + 1];
-    if (label32 == NULL) {
-      return NULL;
-    }
     // read label
     if (fread(label32, 1, val32 * sizeof(*label32), fp) !=
         (val32 * sizeof(*label32))) {
+      delete [] label32;
       return NULL;
     }
     // null terminate
@@ -209,36 +210,20 @@ CharSamp *CharSamp::FromCharDumpFile(FILE *fp) {
     label32 = NULL;
   }
   // read coordinates
-  if (fread(&page, 1, sizeof(page), fp) != sizeof(page)) {
-    return NULL;
-  }
-  if (fread(&left, 1, sizeof(left), fp) != sizeof(left)) {
-    return NULL;
-  }
-  if (fread(&top, 1, sizeof(top), fp) != sizeof(top)) {
-    return NULL;
-  }
-  if (fread(&first_char, 1, sizeof(first_char), fp) != sizeof(first_char)) {
-    return NULL;
-  }
-  if (fread(&last_char, 1, sizeof(last_char), fp) != sizeof(last_char)) {
-    return NULL;
-  }
-  if (fread(&norm_top, 1, sizeof(norm_top), fp) != sizeof(norm_top)) {
-    return NULL;
-  }
-  if (fread(&norm_bottom, 1, sizeof(norm_bottom), fp) != sizeof(norm_bottom)) {
-    return NULL;
-  }
-  if (fread(&norm_aspect_ratio, 1, sizeof(norm_aspect_ratio), fp) !=
-      sizeof(norm_aspect_ratio)) {
+  if (fread(&page, 1, sizeof(page), fp) != sizeof(page) ||
+      fread(&left, 1, sizeof(left), fp) != sizeof(left) ||
+      fread(&top, 1, sizeof(top), fp) != sizeof(top) ||
+      fread(&first_char, 1, sizeof(first_char), fp) != sizeof(first_char) ||
+      fread(&last_char, 1, sizeof(last_char), fp) != sizeof(last_char) ||
+      fread(&norm_top, 1, sizeof(norm_top), fp) != sizeof(norm_top) ||
+      fread(&norm_bottom, 1, sizeof(norm_bottom), fp) != sizeof(norm_bottom) ||
+      fread(&norm_aspect_ratio, 1, sizeof(norm_aspect_ratio), fp) !=
+          sizeof(norm_aspect_ratio)) {
+    delete [] label32;
     return NULL;
   }
   // create the object
   CharSamp *char_samp = new CharSamp();
-  if (char_samp == NULL) {
-    return NULL;
-  }
   // init
   char_samp->label32_ = label32;
   char_samp->page_ = page;
@@ -251,6 +236,7 @@ CharSamp *CharSamp::FromCharDumpFile(FILE *fp) {
   char_samp->norm_aspect_ratio_ = norm_aspect_ratio;
   // load the Bmp8 part
   if (char_samp->LoadFromCharDumpFile(fp) == false) {
+    delete char_samp;  // It owns label32.
     return NULL;
   }
   return char_samp;
@@ -260,9 +246,6 @@ CharSamp *CharSamp::FromCharDumpFile(FILE *fp) {
 // specified width and height
 CharSamp *CharSamp::Scale(int wid, int hgt, bool isotropic) {
   CharSamp *scaled_samp = new CharSamp(wid, hgt);
-  if (scaled_samp == NULL) {
-    return NULL;
-  }
   if (scaled_samp->ScaleFrom(this, isotropic) == false) {
     delete scaled_samp;
     return NULL;
@@ -284,9 +267,6 @@ CharSamp *CharSamp::FromRawData(int left, int top, int wid, int hgt,
                                 unsigned char *data) {
   // create the object
   CharSamp *char_samp = new CharSamp(left, top, wid, hgt);
-  if (char_samp == NULL) {
-    return NULL;
-  }
   if (char_samp->LoadFromRawData(data) == false) {
     delete char_samp;
     return NULL;
@@ -431,14 +411,6 @@ ConComp **CharSamp::Segment(int *segment_cnt, bool right_2_left,
         if ((seg_cnt % kConCompAllocChunk) == 0) {
           ConComp **temp_segm_array =
               new ConComp *[seg_cnt + kConCompAllocChunk];
-          if (temp_segm_array == NULL) {
-            fprintf(stderr, "Cube ERROR (CharSamp::Segment): could not "
-                    "allocate additional connected components\n");
-            delete []concomp_seg_array;
-            delete []concomp_array;
-            delete []seg_array;
-            return NULL;
-          }
           if (seg_cnt > 0) {
             memcpy(temp_segm_array, seg_array, seg_cnt * sizeof(*seg_array));
             delete []seg_array;
@@ -496,8 +468,6 @@ CharSamp *CharSamp::FromConComps(ConComp **concomp_array, int strt_concomp,
   bool *id_exist = new bool[id_cnt];
   bool *left_most_exist = new bool[id_cnt];
   bool *right_most_exist = new bool[id_cnt];
-  if (!id_exist || !left_most_exist || !right_most_exist)
-    return NULL;
   memset(id_exist, 0, id_cnt * sizeof(*id_exist));
   memset(left_most_exist, 0, id_cnt * sizeof(*left_most_exist));
   memset(right_most_exist, 0, id_cnt * sizeof(*right_most_exist));
@@ -554,9 +524,6 @@ CharSamp *CharSamp::FromConComps(ConComp **concomp_array, int strt_concomp,
   (*right_most) = (unq_right_most >= unq_ids);
   // create the char sample object
   CharSamp *samp = new CharSamp(left, top, right - left + 1, bottom - top + 1);
-  if (!samp) {
-    return NULL;
-  }
 
   // set the foreground pixels
   for (concomp = strt_concomp; concomp < end_concomp; concomp++) {
@@ -602,11 +569,8 @@ CharSamp *CharSamp::FromCharDumpFile(unsigned char **raw_data_ptr) {
   memcpy(&val32, raw_data, sizeof(val32));
   raw_data += sizeof(val32);
   // the label is not null terminated in the file
-  if (val32 > 0) {
+  if (val32 > 0 && val32 < MAX_UINT32) {
     label32 = new char_32[val32 + 1];
-    if (label32 == NULL) {
-      return NULL;
-    }
     // read label
     memcpy(label32, raw_data, val32 * sizeof(*label32));
     raw_data += (val32 * sizeof(*label32));
@@ -618,9 +582,6 @@ CharSamp *CharSamp::FromCharDumpFile(unsigned char **raw_data_ptr) {
 
   // create the object
   CharSamp *char_samp = new CharSamp();
-  if (char_samp == NULL) {
-    return NULL;
-  }
 
   // read coordinates
   char_samp->label32_ = label32;

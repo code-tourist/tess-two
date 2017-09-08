@@ -146,41 +146,41 @@ public class PixaTest extends TestCase {
         pixaB.recycle();
     }
 
+//    @SmallTest
+//    public void testPixaReplacePix() {
+//        Pixa pixa = Pixa.createPixa(0, 640, 480);
+//
+//        // Populate the Pixa.
+//        addBlockToPixa(pixa, 0, 0, 640, 480, 8);
+//
+//        Pix pix = new Pix(320, 240, 8);
+//        Box box = new Box(320, 240, 320, 240);
+//
+//        // Replace the existing Pix.
+//        pixa.replacePix(0, pix, box);
+//
+//        // Ensure the replacement was successful.
+//        Pix returnedPix = pixa.getPix(0);
+//        Box returnedBox = pixa.getBox(0);
+//
+//        assertEquals(pix.getWidth(), returnedPix.getWidth());
+//        assertEquals(pix.getHeight(), returnedPix.getHeight());
+//        assertEquals(pix.getDepth(), returnedPix.getDepth());
+//
+//        assertEquals(box.getX(), returnedBox.getX());
+//        assertEquals(box.getY(), returnedBox.getY());
+//        assertEquals(box.getWidth(), returnedBox.getWidth());
+//        assertEquals(box.getHeight(), returnedBox.getHeight());
+//
+//        pix.recycle();
+//        box.recycle();
+//        returnedPix.recycle();
+//        returnedBox.recycle();
+//        pixa.recycle();
+//    }
+
     @SmallTest
-    public void textPixaReplacePix() {
-        Pixa pixa = Pixa.createPixa(0, 640, 480);
-
-        // Populate the Pixa.
-        addBlockToPixa(pixa, 0, 0, 640, 480, 8);
-
-        Pix pix = new Pix(320, 240, 8);
-        Box box = new Box(320, 240, 320, 240);
-
-        // Replace the existing Pix.
-        pixa.replacePix(0, pix, box);
-
-        // Ensure the replacement was successful.
-        Pix returnedPix = pixa.getPix(0);
-        Box returnedBox = pixa.getBox(0);
-
-        assertEquals(pix.getWidth(), returnedPix.getWidth());
-        assertEquals(pix.getHeight(), returnedPix.getHeight());
-        assertEquals(pix.getDepth(), returnedPix.getDepth());
-
-        assertEquals(box.getX(), returnedBox.getX());
-        assertEquals(box.getY(), returnedBox.getY());
-        assertEquals(box.getWidth(), returnedBox.getWidth());
-        assertEquals(box.getHeight(), returnedBox.getHeight());
-
-        pix.recycle();
-        box.recycle();
-        returnedPix.recycle();
-        returnedBox.recycle();
-        pixa.recycle();
-    }
-
-    @SmallTest
-    public void textPixaMergeAndReplacePix() {
+    public void testPixaMergeAndReplacePix() {
         Pixa pixa = Pixa.createPixa(0, 640, 480);
 
         // Populate the Pixa.
@@ -213,7 +213,7 @@ public class PixaTest extends TestCase {
     /**
      * Adds a block to the specified Pixa.
      *
-     * @param pixa
+     * @param pixa The existing Pixa.
      * @param x X-coordinate of the top-left corner of the block.
      * @param y Y-coordinate of the top-left corner of the block.
      * @param width Width of the block.

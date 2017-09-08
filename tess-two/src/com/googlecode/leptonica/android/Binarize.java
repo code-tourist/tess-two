@@ -16,13 +16,18 @@
 
 package com.googlecode.leptonica.android;
 
+import android.support.annotation.FloatRange;
+
 /**
  * Image binarization methods.
  * 
  * @author alanv@google.com (Alan Viverette)
  */
+@SuppressWarnings("WeakerAccess")
 public class Binarize {
     static {
+        System.loadLibrary("jpgt");
+        System.loadLibrary("pngt");
         System.loadLibrary("lept");
     }
 
@@ -42,6 +47,17 @@ public class Binarize {
 
     /** Fraction of the max Otsu score, typically 0.1 */
     public final static float OTSU_SCORE_FRACTION = 0.1f;
+
+    // Sauvola thresholding constants
+
+    public final static int SAUVOLA_DEFAULT_WINDOW_HALFWIDTH = 8;
+
+    public final static float SAUVOLA_DEFAULT_REDUCTION_FACTOR = 0.35f;
+
+    public final static int SAUVOLA_DEFAULT_NUM_TILES_X = 1;
+
+    public final static int SAUVOLA_DEFAULT_NUM_TILES_Y = 1;
+
 
     /**
      * Performs locally-adaptive Otsu threshold binarization with default
@@ -104,15 +120,15 @@ public class Binarize {
      *            for standard Otsu).
      * @return A 1 bpp thresholded PIX image.
      */
-    public static Pix otsuAdaptiveThreshold(
-            Pix pixs, int sizeX, int sizeY, int smoothX, int smoothY, float scoreFraction) {
+    public static Pix otsuAdaptiveThreshold(Pix pixs, int sizeX, int sizeY, int smoothX, int smoothY,
+                                            @FloatRange(from=0.0, to=1.0) float scoreFraction) {
         if (pixs == null)
             throw new IllegalArgumentException("Source pix must be non-null");
         if (pixs.getDepth() != 8)
             throw new IllegalArgumentException("Source pix depth must be 8bpp");
 
-        int nativePix = nativeOtsuAdaptiveThreshold(
-                pixs.mNativePix, sizeX, sizeY, smoothX, smoothY, scoreFraction);
+        long nativePix = nativeOtsuAdaptiveThreshold(pixs.getNativePix(), 
+                sizeX, sizeY, smoothX, smoothY, scoreFraction);
 
         if (nativePix == 0)
             throw new RuntimeException("Failed to perform Otsu adaptive threshold on image");
@@ -121,12 +137,26 @@ public class Binarize {
     }
 
     /**
+     * Performs Sauvola binarization using default values.
+     * 
+     * @see #sauvolaBinarizeTiled(Pix, int, float, int, int)
+     * 
+     * @param pixs An 8 bpp PIX source image.
+     * @return A 1 bpp thresholded PIX image.
+     */
+    public static Pix sauvolaBinarizeTiled(Pix pixs) {
+        return sauvolaBinarizeTiled(pixs, SAUVOLA_DEFAULT_WINDOW_HALFWIDTH, 
+                SAUVOLA_DEFAULT_REDUCTION_FACTOR, SAUVOLA_DEFAULT_NUM_TILES_X, 
+                SAUVOLA_DEFAULT_NUM_TILES_Y);
+    }
+
+    /**
      * Performs Sauvola binarization.
      * <p>
      * Notes:
      * <ol>
      * <li> The window width and height are 2 * whsize + 1.  The minimum
-     * value for whsize is 2; typically it is >= 7..
+     * value for whsize is 2; typically it is &gt;= 7.
      * <li> For nx == ny == 1, this defaults to pixSauvolaBinarize().
      * <li> Why a tiled version?
      * (a) Because the mean value accumulator is a uint32, overflow
@@ -141,7 +171,7 @@ public class Binarize {
      * where:
      *   t = local threshold
      *   m = local mean
-     *   k = @factor (>= 0)   [ typ. 0.35 ]
+     *   k = @factor (&gt;= 0)   [ typ. 0.35 ]
      *   s = local standard deviation, which is maximized at
      *       127.5 when half the samples are 0 and half are 255.
      * <li> The basic idea of Niblack and Sauvola binarization is that
@@ -152,21 +182,23 @@ public class Binarize {
      *   
      * @param pixs An 8 bpp PIX source image.
      * @param whsize Window half-width for measuring local statistics
-     * @param factor Factor for reducing threshold due to variance; >= 0
-     * @param nx Subdivision into tiles; >= 1
-     * @param ny Subdivision into tiles; >= 1
-     * @return A 1 bpp thresholded PIX image.r
+     * @param factor Factor for reducing threshold due to variance; &gt;= 0
+     * @param nx Subdivision into tiles; &gt;= 1
+     * @param ny Subdivision into tiles; &gt;= 1
+     * @return A 1 bpp thresholded PIX image.
      */
-    public static Pix sauvolaBinarizeTiled(Pix pixs, int whsize, float factor, int nx, int ny) {
+    public static Pix sauvolaBinarizeTiled(Pix pixs, int whsize, @FloatRange(from=0.0) float factor,
+                                           int nx, int ny) {
         if (pixs == null)
             throw new IllegalArgumentException("Source pix must be non-null");
         if (pixs.getDepth() != 8)
             throw new IllegalArgumentException("Source pix depth must be 8bpp");
-        
-        int nativePix = nativeSauvolaBinarizeTiled(pixs.mNativePix, whsize, factor, nx, ny);
-        
+
+        long nativePix = nativeSauvolaBinarizeTiled(pixs.getNativePix(), 
+                whsize, factor, nx, ny);
+
         if (nativePix == 0)
-            throw new RuntimeException("Failed to perform Otsu adaptive threshold on image");
+            throw new RuntimeException("Failed to perform Sauvola binarization on image");
 
         return new Pix(nativePix);        
     }
@@ -175,9 +207,9 @@ public class Binarize {
     // * NATIVE CODE *
     // ***************
 
-    private static native int nativeOtsuAdaptiveThreshold(
-            int nativePix, int sizeX, int sizeY, int smoothX, int smoothY, float scoreFract);
+    private static native long nativeOtsuAdaptiveThreshold(
+            long nativePix, int sizeX, int sizeY, int smoothX, int smoothY, float scoreFract);
 
-    private static native int nativeSauvolaBinarizeTiled(
-    		int nativePix, int whsize, float factor, int nx, int ny);
+    private static native long nativeSauvolaBinarizeTiled(
+            long nativePix, int whsize, float factor, int nx, int ny);
 }

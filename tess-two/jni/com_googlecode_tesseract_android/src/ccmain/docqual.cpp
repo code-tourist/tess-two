@@ -1,8 +1,8 @@
 /******************************************************************
  * File:        docqual.cpp  (Formerly docqual.c)
  * Description: Document Quality Metrics
- * Author:		Phil Cheatle
- * Created:		Mon May  9 11:27:28 BST 1994
+ * Author:    Phil Cheatle
+ * Created:   Mon May  9 11:27:28 BST 1994
  *
  * (C) Copyright 1994, Hewlett-Packard Ltd.
  ** Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,14 +21,11 @@
 #pragma warning(disable:4244)  // Conversion warnings
 #endif
 
-#include "mfcpch.h"
 #include          <ctype.h>
 #include          "docqual.h"
-#include          "tfacep.h"
 #include          "reject.h"
 #include          "tesscallback.h"
 #include          "tessvars.h"
-#include          "secname.h"
 #include          "globals.h"
 #include          "tesseractclass.h"
 
@@ -67,7 +64,7 @@ struct DocQualCallbacks {
  *************************************************************************/
 inT16 Tesseract::word_blob_quality(WERD_RES *word, ROW *row) {
   if (word->bln_boxes == NULL ||
-      word->rebuild_word == NULL || word->rebuild_word->blobs == NULL)
+      word->rebuild_word == NULL || word->rebuild_word->blobs.empty())
     return 0;
 
   DocQualCallbacks cb(word);
@@ -82,8 +79,8 @@ inT16 Tesseract::word_outline_errs(WERD_RES *word) {
   inT16 err_count = 0;
 
   if (word->rebuild_word != NULL) {
-    TBLOB* blob = word->rebuild_word->blobs;
-    for (; blob != NULL; blob = blob->next) {
+    for (int b = 0; b < word->rebuild_word->NumBlobs(); ++b) {
+      TBLOB* blob = word->rebuild_word->blobs[b];
       err_count += count_outline_errs(word->best_choice->unichar_string()[i],
                                       blob->NumOutlines());
       i++;
@@ -101,9 +98,12 @@ void Tesseract::word_char_quality(WERD_RES *word,
                                   ROW *row,
                                   inT16 *match_count,
                                   inT16 *accepted_match_count) {
-  if (word->bln_boxes == NULL ||
-      word->rebuild_word == NULL || word->rebuild_word->blobs == NULL)
+  if (word->bln_boxes == NULL || word->rebuild_word == NULL ||
+      word->rebuild_word->blobs.empty()) {
+    *match_count = 0;
+    *accepted_match_count = 0;
     return;
+  }
 
   DocQualCallbacks cb(word);
   word->bln_boxes->ProcessMatchedBlobs(
@@ -119,7 +119,7 @@ void Tesseract::word_char_quality(WERD_RES *word,
  *************************************************************************/
 void Tesseract::unrej_good_chs(WERD_RES *word, ROW *row) {
   if (word->bln_boxes == NULL ||
-      word->rebuild_word == NULL || word->rebuild_word->blobs == NULL)
+      word->rebuild_word == NULL || word->rebuild_word->blobs.empty())
     return;
 
   DocQualCallbacks cb(word);
@@ -132,7 +132,7 @@ inT16 Tesseract::count_outline_errs(char c, inT16 outline_count) {
   int expected_outline_count;
 
   if (STRING (outlines_odd).contains (c))
-    return 0;                    //Dont use this char
+    return 0;  // Don't use this char
   else if (STRING (outlines_2).contains (c))
     expected_outline_count = 2;
   else
@@ -151,17 +151,16 @@ void Tesseract::quality_based_rejection(PAGE_RES_IT &page_res_it,
   }
 }
 
-
 /*************************************************************************
  * unrej_good_quality_words()
  * Accept potential rejects in words which pass the following checks:
  *    - Contains a potential reject
  *    - Word looks like a sensible alpha word.
  *    - Word segmentation is the same as the original image
- *		- All characters have the expected number of outlines
+ *    - All characters have the expected number of outlines
  * NOTE - the rejection counts are recalculated after unrejection
- *      - CANT do it in a single pass without a bit of fiddling
- *		- keep it simple but inefficient
+ *      - CAN'T do it in a single pass without a bit of fiddling
+ *    - keep it simple but inefficient
  *************************************************************************/
 void Tesseract::unrej_good_quality_words(  //unreject potential
                                          PAGE_RES_IT &page_res_it) {
@@ -324,7 +323,7 @@ void Tesseract::doc_and_block_rejection(  //reject big chunks
 
         /* Walk rows in block testing for row rejection */
         row_no = 0;
-        while ((word = page_res_it.word()) != NULL &&
+        while (page_res_it.word() != NULL &&
                page_res_it.block() == current_block) {
           current_row = page_res_it.row();
           row_no++;
@@ -403,10 +402,9 @@ void Tesseract::doc_and_block_rejection(  //reject big chunks
 
 }  // namespace tesseract
 
-
 /*************************************************************************
  * reject_whole_page()
- * Dont believe any of it - set the reject map to 00..00 in all words
+ * Don't believe any of it - set the reject map to 00..00 in all words
  *
  *************************************************************************/
 
@@ -669,17 +667,14 @@ void Tesseract::convert_bad_unlv_chs(WERD_RES *word_res) {
   UNICHAR_ID unichar_space = word_res->uch_set->unichar_to_id(" ");
   UNICHAR_ID unichar_tilde = word_res->uch_set->unichar_to_id("~");
   UNICHAR_ID unichar_pow = word_res->uch_set->unichar_to_id("^");
-  bool modified = false;
   for (i = 0; i < word_res->reject_map.length(); ++i) {
     if (word_res->best_choice->unichar_id(i) == unichar_tilde) {
       word_res->best_choice->set_unichar_id(unichar_dash, i);
-      modified = true;
       if (word_res->reject_map[i].accepted ())
         word_res->reject_map[i].setrej_unlv_rej ();
     }
     if (word_res->best_choice->unichar_id(i) == unichar_pow) {
       word_res->best_choice->set_unichar_id(unichar_space, i);
-      modified = true;
       if (word_res->reject_map[i].accepted ())
         word_res->reject_map[i].setrej_unlv_rej ();
     }
@@ -991,7 +986,8 @@ BOOL8 Tesseract::noise_outlines(TWERD *word) {
   inT16 max_dimension;
   float small_limit = kBlnXHeight * crunch_small_outlines_size;
 
-  for (TBLOB* blob = word->blobs; blob != NULL; blob = blob->next) {
+  for (int b = 0; b < word->NumBlobs(); ++b) {
+    TBLOB* blob = word->blobs[b];
     for (TESSLINE* ol = blob->outlines; ol != NULL; ol = ol->next) {
       outline_count++;
       box = ol->bounding_box();
@@ -1003,6 +999,7 @@ BOOL8 Tesseract::noise_outlines(TWERD *word) {
         small_outline_count++;
     }
   }
-  return (small_outline_count >= outline_count);
+  return small_outline_count >= outline_count;
 }
+
 }  // namespace tesseract

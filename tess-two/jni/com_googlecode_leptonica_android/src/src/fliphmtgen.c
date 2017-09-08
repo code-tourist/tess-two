@@ -63,11 +63,12 @@ static void  fhmt_1_3(l_uint32 *, l_int32, l_int32, l_int32, l_uint32 *, l_int32
 /*
  *  pixFlipFHMTGen()
  *
- *     Input:  pixd (usual 3 choices: null, == pixs, != pixs)
- *             pixs
- *             sel name (one of four defined in SEL_NAMES[])
- *     Return: pixd
+ *      Input:  pixd (usual 3 choices: null, == pixs, != pixs)
+ *              pixs
+ *              sel name (one of four defined in SEL_NAMES[])
+ *      Return: pixd
  *
+ *  Notes:
  *     Action: hit-miss transform on pixs by the sel
  *     N.B.: the sel must have at least one hit, and it
  *           can have any number of misses.
@@ -102,8 +103,7 @@ PIX       *pixt;
     if (pixd) {
         if (!pixSizesEqual(pixs, pixd))
             return (PIX *)ERROR_PTR("sizes not equal", procName, pixd);
-    }
-    else {
+    } else {
         if ((pixd = pixCreateTemplate(pixs)) == NULL)
             return (PIX *)ERROR_PTR("pixd not made", procName, NULL);
     }
@@ -126,8 +126,7 @@ PIX       *pixt;
         datat = pixGetData(pixt) + ADDED_BORDER * wpls + ADDED_BORDER / 32;
         flipfhmtgen_low(datad, w, h, wpld, datat, wpls, index);
         pixDestroy(&pixt);
-    }
-    else {  /* simple and not in-place */
+    } else {  /* simple and not in-place */
         flipfhmtgen_low(datad, w, h, wpld, datas, wpls, index);
     }
 

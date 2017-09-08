@@ -20,37 +20,37 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-jint Java_com_googlecode_leptonica_android_Pixa_nativeCreate(JNIEnv *env, jclass clazz, jint size) {
+jlong Java_com_googlecode_leptonica_android_Pixa_nativeCreate(JNIEnv *env, jclass clazz, jint size) {
   PIXA *pixa = pixaCreate((l_int32) size);
 
-  return (jint) pixa;
+  return (jlong) pixa;
 }
 
-jint Java_com_googlecode_leptonica_android_Pixa_nativeCopy(JNIEnv *env, jclass clazz,
-                                                           jint nativePixa) {
+jlong Java_com_googlecode_leptonica_android_Pixa_nativeCopy(JNIEnv *env, jclass clazz,
+                                                            jlong nativePixa) {
   PIXA *pixas = (PIXA *) nativePixa;
   PIXA *pixad = pixaCopy(pixas, L_CLONE);
 
-  return (jint) pixad;
+  return (jlong) pixad;
 }
 
-jint Java_com_googlecode_leptonica_android_Pixa_nativeSort(JNIEnv *env, jclass clazz,
-                                                           jint nativePixa, jint field, jint order) {
+jlong Java_com_googlecode_leptonica_android_Pixa_nativeSort(JNIEnv *env, jclass clazz,
+                                                            jlong nativePixa, jint field, jint order) {
   PIXA *pixas = (PIXA *) nativePixa;
   PIXA *pixad = pixaSort(pixas, field, order, NULL, L_CLONE);
 
-  return (jint) pixad;
+  return (jlong) pixad;
 }
 
 void Java_com_googlecode_leptonica_android_Pixa_nativeDestroy(JNIEnv *env, jclass clazz,
-                                                              jint nativePixa) {
+                                                              jlong nativePixa) {
   PIXA *pixa = (PIXA *) nativePixa;
 
   pixaDestroy(&pixa);
 }
 
 jboolean Java_com_googlecode_leptonica_android_Pixa_nativeJoin(JNIEnv *env, jclass clazz,
-                                                               jint nativePixa, jint otherPixa) {
+                                                               jlong nativePixa, jlong otherPixa) {
   PIXA *pixa = (PIXA *) nativePixa;
   PIXA *pixas = (PIXA *) otherPixa;
 
@@ -62,14 +62,14 @@ jboolean Java_com_googlecode_leptonica_android_Pixa_nativeJoin(JNIEnv *env, jcla
 }
 
 jint Java_com_googlecode_leptonica_android_Pixa_nativeGetCount(JNIEnv *env, jclass clazz,
-                                                               jint nativePixa) {
+                                                               jlong nativePixa) {
   PIXA *pixa = (PIXA *) nativePixa;
 
   return (jint) pixaGetCount(pixa);
 }
 
 void Java_com_googlecode_leptonica_android_Pixa_nativeAddPix(JNIEnv *env, jclass clazz,
-                                                             jint nativePixa, jint nativePix,
+                                                             jlong nativePixa, jlong nativePix,
                                                              jint mode) {
   PIXA *pixa = (PIXA *) nativePixa;
   PIX *pix = (PIX *) nativePix;
@@ -78,7 +78,7 @@ void Java_com_googlecode_leptonica_android_Pixa_nativeAddPix(JNIEnv *env, jclass
 }
 
 void Java_com_googlecode_leptonica_android_Pixa_nativeAddBox(JNIEnv *env, jclass clazz,
-                                                             jint nativePixa, jint nativeBox,
+                                                             jlong nativePixa, jlong nativeBox,
                                                              jint mode) {
   PIXA *pixa = (PIXA *) nativePixa;
   BOX *box = (BOX *) nativeBox;
@@ -87,8 +87,8 @@ void Java_com_googlecode_leptonica_android_Pixa_nativeAddBox(JNIEnv *env, jclass
 }
 
 void Java_com_googlecode_leptonica_android_Pixa_nativeAdd(JNIEnv *env, jclass clazz,
-                                                          jint nativePixa, jint nativePix,
-                                                          jint nativeBox, jint mode) {
+                                                          jlong nativePixa, jlong nativePix,
+                                                          jlong nativeBox, jint mode) {
   PIXA *pixa = (PIXA *) nativePixa;
   PIX *pix = (PIX *) nativePix;
   BOX *box = (BOX *) nativeBox;
@@ -98,8 +98,8 @@ void Java_com_googlecode_leptonica_android_Pixa_nativeAdd(JNIEnv *env, jclass cl
 }
 
 void Java_com_googlecode_leptonica_android_Pixa_nativeReplacePix(JNIEnv *env, jclass clazz,
-                                                                 jint nativePixa, jint index,
-                                                                 jint nativePix, jint nativeBox) {
+                                                                 jlong nativePixa, jint index,
+                                                                 jlong nativePix, jlong nativeBox) {
   PIXA *pixa = (PIXA *) nativePixa;
   PIX *pix = (PIX *) nativePix;
   BOX *box = (BOX *) nativeBox;
@@ -108,44 +108,46 @@ void Java_com_googlecode_leptonica_android_Pixa_nativeReplacePix(JNIEnv *env, jc
 }
 
 void Java_com_googlecode_leptonica_android_Pixa_nativeMergeAndReplacePix(JNIEnv *env, jclass clazz,
-                                                                         jint nativePixa,
+                                                                         jlong nativePixa,
                                                                          jint indexA, jint indexB) {
   PIXA *pixa = (PIXA *) nativePixa;
 
   l_int32 op;
+  l_int32 depth;
   l_int32 x, y, w, h;
   l_int32 dx, dy, dw, dh;
-  PIX *pixs, *pixd;
+  PIX *pixA, *pixB, *pixd;
   BOX *boxA, *boxB, *boxd;
 
+  pixA = pixaGetPix(pixa, indexA, L_CLONE);
+  pixB = pixaGetPix(pixa, indexB, L_CLONE);
   boxA = pixaGetBox(pixa, indexA, L_CLONE);
   boxB = pixaGetBox(pixa, indexB, L_CLONE);
   boxd = boxBoundingRegion(boxA, boxB);
 
+  depth = pixGetDepth(pixA);
   boxGetGeometry(boxd, &x, &y, &w, &h);
-  pixd = pixCreate(w, h, 1);
+  pixd = pixCreate(w, h, depth);
 
   op = PIX_SRC | PIX_DST;
 
-  pixs = pixaGetPix(pixa, indexA, L_CLONE);
   boxGetGeometry(boxA, &dx, &dy, &dw, &dh);
-  pixRasterop(pixd, dx - x, dy - y, dw, dh, op, pixs, 0, 0);
-  pixDestroy(&pixs);
+  pixRasterop(pixd, dx - x, dy - y, dw, dh, op, pixA, 0, 0);
+  pixDestroy(&pixA);
   boxDestroy(&boxA);
 
-  pixs = pixaGetPix(pixa, indexB, L_CLONE);
   boxGetGeometry(boxB, &dx, &dy, &dw, &dh);
-  pixRasterop(pixd, dx - x, dy - y, dw, dh, op, pixs, 0, 0);
-  pixDestroy(&pixs);
+  pixRasterop(pixd, dx - x, dy - y, dw, dh, op, pixB, 0, 0);
+  pixDestroy(&pixB);
   boxDestroy(&boxB);
 
   pixaReplacePix(pixa, indexA, pixd, boxd);
-
+  pixaRemovePix(pixa, indexB);
 }
 
 jboolean Java_com_googlecode_leptonica_android_Pixa_nativeWriteToFileRandomCmap(JNIEnv *env,
                                                                                 jclass clazz,
-                                                                                jint nativePixa,
+                                                                                jlong nativePixa,
                                                                                 jstring fileName,
                                                                                 jint width,
                                                                                 jint height) {
@@ -172,24 +174,24 @@ jboolean Java_com_googlecode_leptonica_android_Pixa_nativeWriteToFileRandomCmap(
   return JNI_TRUE;
 }
 
-jint Java_com_googlecode_leptonica_android_Pixa_nativeGetPix(JNIEnv *env, jclass clazz,
-                                                             jint nativePixa, jint index) {
+jlong Java_com_googlecode_leptonica_android_Pixa_nativeGetPix(JNIEnv *env, jclass clazz,
+                                                             jlong nativePixa, jint index) {
   PIXA *pixa = (PIXA *) nativePixa;
   PIX *pix = pixaGetPix(pixa, (l_int32) index, L_CLONE);
 
-  return (jint) pix;
+  return (jlong) pix;
 }
 
-jint Java_com_googlecode_leptonica_android_Pixa_nativeGetBox(JNIEnv *env, jclass clazz,
-                                                             jint nativePixa, jint index) {
+jlong Java_com_googlecode_leptonica_android_Pixa_nativeGetBox(JNIEnv *env, jclass clazz,
+                                                              jlong nativePixa, jint index) {
   PIXA *pixa = (PIXA *) nativePixa;
   BOX *box = pixaGetBox(pixa, (l_int32) index, L_CLONE);
 
-  return (jint) box;
+  return (jlong) box;
 }
 
 jboolean Java_com_googlecode_leptonica_android_Pixa_nativeGetBoxGeometry(JNIEnv *env, jclass clazz,
-                                                                         jint nativePixa,
+                                                                         jlong nativePixa,
                                                                          jint index,
                                                                          jintArray dimensions) {
   PIXA *pixa = (PIXA *) nativePixa;

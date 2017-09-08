@@ -1,3 +1,12 @@
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 /**********************************************************************
  * tospace.cpp
  *
@@ -16,13 +25,11 @@
  *
  **********************************************************************/
 
-#include "textord.h"
-#include "mfcpch.h"
-#include "tovars.h"
 #include "drawtord.h"
-#include "textord.h"
 #include "ndminx.h"
 #include "statistc.h"
+#include "textord.h"
+#include "tovars.h"
 
 // Include automatically generated configuration file if running autoconf.
 #ifdef HAVE_CONFIG_H
@@ -113,25 +120,25 @@ void Textord::block_spacing_stats(
     TO_BLOCK *block,
     GAPMAP *gapmap,
     BOOL8 &old_text_ord_proportional,
-    inT16 &block_space_gap_width,     //resulting estimate
-    inT16 &block_non_space_gap_width  //resulting estimate
+    inT16 &block_space_gap_width,     // resulting estimate
+    inT16 &block_non_space_gap_width  // resulting estimate
                                   ) {
-  TO_ROW_IT row_it;              //row iterator
-  TO_ROW *row;                   //current row
-  BLOBNBOX_IT blob_it;           //iterator
+  TO_ROW_IT row_it;              // row iterator
+  TO_ROW *row;                   // current row
+  BLOBNBOX_IT blob_it;           // iterator
 
   STATS centre_to_centre_stats (0, MAXSPACING);
-  //DEBUG USE ONLY
+  // DEBUG USE ONLY
   STATS all_gap_stats (0, MAXSPACING);
   STATS space_gap_stats (0, MAXSPACING);
-  inT16 minwidth = MAX_INT16;    //narrowest blob
+  inT16 minwidth = MAXSPACING;    // narrowest blob
   TBOX blob_box;
   TBOX prev_blob_box;
   inT16 centre_to_centre;
   inT16 gap_width;
   float real_space_threshold;
-  float iqr_centre_to_centre;    //DEBUG USE ONLY
-  float iqr_all_gap_stats;       //DEBUG USE ONLY
+  float iqr_centre_to_centre;    // DEBUG USE ONLY
+  float iqr_all_gap_stats;       // DEBUG USE ONLY
   inT32 end_of_row;
   inT32 row_length;
 
@@ -421,9 +428,8 @@ void Textord::row_spacing_stats(
     if (suspected_table &&
     (row->space_size < tosp_table_kn_sp_ratio * row->kern_size)) {
       if (tosp_debug_level > 5)
-        tprintf ("B:%d R:%d -- DONT BELIEVE SPACE %3.2f %d %3.2f.\n",
-          block_idx, row_idx,
-          row->kern_size, row->space_threshold, row->space_size);
+        tprintf("B:%d R:%d -- DON'T BELIEVE SPACE %3.2f %d %3.2f.\n", block_idx,
+                row_idx, row->kern_size, row->space_threshold, row->space_size);
       row->space_threshold =
         (inT32) (tosp_table_kn_sp_ratio * row->kern_size);
       row->space_size = MAX (row->space_threshold + 1, row->xheight);
@@ -443,10 +449,9 @@ void Textord::row_spacing_stats(
           MAX (tosp_min_sane_kn_sp * MAX (row->kern_size, 2.5),
           row->xheight / 2);
       if (tosp_debug_level > 5)
-        tprintf
-          ("B:%d R:%d -- DONT BELIEVE SPACE %3.2f %d %3.2f -> %3.2f.\n",
-          block_idx, row_idx, row->kern_size, row->space_threshold,
-          row->space_size, sane_space);
+        tprintf("B:%d R:%d -- DON'T BELIEVE SPACE %3.2f %d %3.2f -> %3.2f.\n",
+                block_idx, row_idx, row->kern_size, row->space_threshold,
+                row->space_size, sane_space);
       row->space_size = sane_space;
       row->space_threshold =
         inT32 (floor ((row->space_size + row->kern_size) /
@@ -457,10 +462,9 @@ void Textord::row_spacing_stats(
       MAX (row->kern_size, 2.5)));
     if (row->space_threshold > sane_threshold) {
       if (tosp_debug_level > 5)
-        tprintf ("B:%d R:%d -- DONT BELIEVE THRESH %3.2f %d %3.2f->%d.\n",
-          block_idx, row_idx,
-          row->kern_size,
-          row->space_threshold, row->space_size, sane_threshold);
+        tprintf("B:%d R:%d -- DON'T BELIEVE THRESH %3.2f %d %3.2f->%d.\n",
+                block_idx, row_idx, row->kern_size, row->space_threshold,
+                row->space_size, sane_threshold);
       row->space_threshold = sane_threshold;
       if (row->space_size <= sane_threshold)
         row->space_size = row->space_threshold + 1.0f;
@@ -500,7 +504,7 @@ void Textord::row_spacing_stats(
       MIN (inT32 (ceil (tosp_fuzzy_space_factor * row->xheight)),
       inT32 (row->space_size));
     if (row->min_space <= row->space_threshold)
-                                 //Dont be silly
+      // Don't be silly
       row->min_space = row->space_threshold + 1;
     /*
     Lets try to guess the max certain kern gap by looking at the cluster of
@@ -544,7 +548,7 @@ void Textord::row_spacing_stats(
   /* Ensure that ANY space less than some multiplier times the kern size is
   fuzzy.  In tables there is a risk of erroneously setting a small space size
   when there are no real spaces. Sometimes tables have text squashed into
-  columns so that the kn->sp ratio is small anyway - this means that we cant
+  columns so that the kn->sp ratio is small anyway - this means that we can't
   use this to force a wider separation - hence we rely on context to join any
   dubious breaks. */
 
@@ -561,7 +565,7 @@ void Textord::row_spacing_stats(
       row->kern_size));
   }
   if (row->max_nonspace > row->space_threshold) {
-                                 //Dont be silly
+    // Don't be silly
     row->max_nonspace = row->space_threshold;
   }
 
@@ -702,8 +706,8 @@ BOOL8 Textord::isolated_row_stats(TO_ROW *row,
     ((small_gaps_count / (float) total) < tosp_enough_small_gaps) ||
   (total - small_gaps_count < 1)) {
     if (tosp_debug_level > 5)
-      tprintf ("B:%d R:%d -- Cant do isolated row stats.\n",
-        block_idx, row_idx);
+      tprintf("B:%d R:%d -- Can't do isolated row stats.\n", block_idx,
+              row_idx);
     return FALSE;
   }
   blob_it.set_to_list (row->blob_list ());
@@ -887,33 +891,32 @@ ROW *Textord::make_prop_words(
     TO_ROW *row,     // row to make
     FCOORD rotation  // for drawing
                               ) {
-  BOOL8 bol;                     //start of line
+  BOOL8 bol;                     // start of line
   /* prev_ values are for start of word being built. non prev_ values are for
   the gap between the word being built and the next one. */
-  BOOL8 prev_fuzzy_sp;           //probably space
-  BOOL8 prev_fuzzy_non;          //probably not
-  uinT8 prev_blanks;             //in front of word
-  BOOL8 fuzzy_sp;                //probably space
-  BOOL8 fuzzy_non;               //probably not
-  uinT8 blanks;                  //in front of word
+  BOOL8 prev_fuzzy_sp;           // probably space
+  BOOL8 prev_fuzzy_non;          // probably not
+  uinT8 prev_blanks;             // in front of word
+  BOOL8 fuzzy_sp = false;        // probably space
+  BOOL8 fuzzy_non = false;       // probably not
+  uinT8 blanks = 0;              // in front of word
   BOOL8 prev_gap_was_a_space = FALSE;
   BOOL8 break_at_next_gap = FALSE;
-  ROW *real_row;                 //output row
+  ROW *real_row;                 // output row
   C_OUTLINE_IT cout_it;
   C_BLOB_LIST cblobs;
   C_BLOB_IT cblob_it = &cblobs;
   WERD_LIST words;
-  WERD_IT word_it;               //new words
-  WERD *word;                    //new word
-  WERD_IT rep_char_it;           //repeated char words
+  WERD_IT word_it;               // new words
+  WERD *word;                    // new word
+  WERD_IT rep_char_it;           // repeated char words
   inT32 next_rep_char_word_right = MAX_INT32;
-  float repetition_spacing;      //gap between repetitions
-  inT32 xstarts[2];              //row ends
-  double coeffs[3];              //quadratic
-  inT32 prev_x;                  //end of prev blob
-  BLOBNBOX *bblob;               //current blob
-  TBOX blob_box;                  //bounding box
-  BLOBNBOX_IT box_it;            //iterator
+  float repetition_spacing;      // gap between repetitions
+  inT32 xstarts[2];              // row ends
+  inT32 prev_x;                  // end of prev blob
+  BLOBNBOX *bblob;               // current blob
+  TBOX blob_box;                 // bounding box
+  BLOBNBOX_IT box_it;            // iterator
   TBOX prev_blob_box;
   TBOX next_blob_box;
   inT16 prev_gap = MAX_INT16;
@@ -1133,10 +1136,10 @@ ROW *Textord::make_prop_words(
       else
         blanks = 0;
       if (tosp_debug_level > 5)
-        tprintf
-          ("Repch wd at EOL (%d,%d). rep spacing %d; Lgap:%d (%d blanks)\n",
-          word->bounding_box ().left (), word->bounding_box ().bottom (),
-          repetition_spacing, current_gap, blanks);
+        tprintf(
+            "Repch wd at EOL (%d,%d). rep spacing %5.2f; Lgap:%d (%d blanks)\n",
+            word->bounding_box().left(), word->bounding_box().bottom(),
+            repetition_spacing, current_gap, blanks);
       word->set_blanks (blanks);
                                  //NO uncertainty
       word->set_flag (W_FUZZY_SP, FALSE);
@@ -1151,9 +1154,6 @@ ROW *Textord::make_prop_words(
         rep_char_it.forward ();
       }
     }
-    coeffs[0] = 0;
-    coeffs[1] = row->line_m ();
-    coeffs[2] = row->line_c ();
     real_row = new ROW (row,
       (inT16) row->kern_size, (inT16) row->space_size);
     word_it.set_to_list (real_row->word_list ());
@@ -1192,7 +1192,6 @@ ROW *Textord::make_blob_words(
   WERD_LIST words;
   WERD_IT word_it;               // new words
   WERD *word;                    // new word
-  double coeffs[3];              // quadratic
   BLOBNBOX *bblob;               // current blob
   TBOX blob_box;                 // bounding box
   BLOBNBOX_IT box_it;            // iterator
@@ -1237,9 +1236,6 @@ ROW *Textord::make_blob_words(
     }
     while (!box_it.at_first()); // until back at start
     /* Setup the row with created words. */
-    coeffs[0] = 0;
-    coeffs[1] = row->line_m();
-    coeffs[2] = row->line_c();
     real_row = new ROW(row, (inT16) row->kern_size, (inT16) row->space_size);
     word_it.set_to_list(real_row->word_list());
                                  //put words in row
@@ -1336,9 +1332,10 @@ BOOL8 Textord::make_a_word_break(
     we may need to set PARTICULAR spaces to fuzzy or not. The values will ONLY
     be used if the function returns TRUE - ie the word is to be broken.
     */
-    blanks = (uinT8) (current_gap / row->space_size);
-    if (blanks < 1)
-      blanks = 1;
+    int num_blanks = current_gap;
+    if (row->space_size > 1.0f)
+      num_blanks = IntCastRounded(current_gap / row->space_size);
+    blanks = static_cast<uinT8>(ClipToRange(num_blanks, 1, MAX_UINT8));
     fuzzy_sp = FALSE;
     fuzzy_non = FALSE;
     /*
@@ -1696,10 +1693,9 @@ void Textord::mark_gap(
       blob.bottom () + blob.height () / 2.0f);
  }
   if (tosp_debug_level > 5)
-    tprintf ("  (%d,%d) Sp<->Kn Rule %d %d %d %d %d\n",
-      blob.left () - current_gap / 2, blob.bottom (), rule,
-      prev_gap, prev_blob_width, current_gap,
-      next_blob_width, next_gap);
+    tprintf("  (%d,%d) Sp<->Kn Rule %d %d %d %d %d %d\n",
+            blob.left() - current_gap / 2, blob.bottom(), rule, prev_gap,
+            prev_blob_width, current_gap, next_blob_width, next_gap);
 }
 #endif
 
@@ -1737,8 +1733,7 @@ BOOL8 Textord::ignore_big_gap(TO_ROW *row,
                               inT16 right) {
   inT16 gap = right - left + 1;
 
-  if (tosp_ignore_big_gaps > 999)
-    return FALSE;                //Dont ignore
+  if (tosp_ignore_big_gaps > 999) return FALSE;  // Don't ignore
   if (tosp_ignore_big_gaps > 0)
     return (gap > tosp_ignore_big_gaps * row->xheight);
   if (gap > tosp_ignore_very_big_gaps * row->xheight)
@@ -1760,14 +1755,13 @@ BOOL8 Textord::ignore_big_gap(TO_ROW *row,
   return FALSE;
 }
 
-
 /**********************************************************************
  * reduced_box_next
  *
  * Compute the bounding box of this blob with merging of x overlaps
  * but no pre-chopping.
  * Then move the iterator on to the start of the next blob.
- * DONT reduce the box for small things - eg punctuation.
+ * DON'T reduce the box for small things - eg punctuation.
  **********************************************************************/
 TBOX Textord::reduced_box_next(
     TO_ROW *row,     // current row

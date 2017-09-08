@@ -20,17 +20,16 @@
 #ifndef           GLOBALOC_H
 #define           GLOBALOC_H
 
-#include          "hosthplb.h"
-#include          "notdll.h"
+#include          "host.h"
 
-void signal_exit(                 //
-                 int signal_code  //Signal which
-                );
-//extern "C" {
-void err_exit(); 
-                                 //The real signal
-void signal_termination_handler(int sig); 
-//};
+// Saves a clone of the given pix, and notes its resolution in thread-specific
+// data, so that the image can be written prior to a crash.
+struct Pix;
+void SavePixForCrash(int resolution, Pix* pix);
+
+void signal_exit(int signal_code);
+
+void TESS_API err_exit(); 
 
 void set_global_loc_code(int loc_code); 
 

@@ -39,8 +39,8 @@
 #endif  /* _WIN32 */
 #include "allheaders.h"
 
-main(int    argc,
-char **argv)
+int main(int    argc,
+         char **argv)
 {
 l_int32       i, ival, n;
 l_float32     f, val;
@@ -56,20 +56,20 @@ L_REGPARAMS  *rp;
     na1 = numaCreate(500);
     for (i = 0; i < 500; i++) {
         f = 48.3 * sin(0.13 * (l_float32)i);
-	f += 63.4 * cos(0.21 * (l_float32)i);
-	numaAddNumber(na1, f);
+        f += 63.4 * cos(0.21 * (l_float32)i);
+        numaAddNumber(na1, f);
     }
     gplot = gplotCreate("/tmp/extrema", GPLOT_PNG, "Extrema test", "x", "y");
     gplotAddPlot(gplot, NULL, na1, GPLOT_LINES, "plot 1");
 
         /* Find the local min and max and plot them */
-    na2 = numaFindExtrema(na1, 38.3);
+    na2 = numaFindExtrema(na1, 38.3, NULL);
     n = numaGetCount(na2);
     na3 = numaCreate(n);
     for (i = 0; i < n; i++) {
         numaGetIValue(na2, i, &ival);
         numaGetFValue(na1, ival, &val);
-	numaAddNumber(na3, val);
+        numaAddNumber(na3, val);
     }
     gplotAddPlot(gplot, na2, na3, GPLOT_POINTS, "plot 2");
     gplotMakeOutput(gplot);

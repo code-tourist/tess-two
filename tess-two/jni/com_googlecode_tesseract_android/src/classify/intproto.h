@@ -28,6 +28,8 @@
 #include "scrollview.h"
 #include "unicharset.h"
 
+class FCOORD;
+
 /* define order of params in pruners */
 #define PRUNER_X      0
 #define PRUNER_Y      1
@@ -39,7 +41,7 @@
 #define Y_SHIFT   (0.5)
 
 #define MAX_PROTO_INDEX   24
-#define BITS_PER_WERD   (8 * sizeof (uinT32))
+#define BITS_PER_WERD   static_cast<int>(8 * sizeof(uinT32))
 /* Script detection: increase this number to 128 */
 #define MAX_NUM_CONFIGS   64
 #define MAX_NUM_PROTOS    512
@@ -50,7 +52,7 @@
 #define NUM_CP_BUCKETS    24
 #define CLASSES_PER_CP    32
 #define NUM_BITS_PER_CLASS  2
-#define CLASS_PRUNER_CLASS_MASK (~(~0 << NUM_BITS_PER_CLASS))
+#define CLASS_PRUNER_CLASS_MASK (~(~0u << NUM_BITS_PER_CLASS))
 #define CLASSES_PER_CP_WERD (CLASSES_PER_CP / NUM_BITS_PER_CLASS)
 #define PROTOS_PER_PP_WERD  BITS_PER_WERD
 #define BITS_PER_CP_VECTOR  (CLASSES_PER_CP * NUM_BITS_PER_CLASS)
@@ -130,8 +132,14 @@ INT_TEMPLATES_STRUCT, *INT_TEMPLATES;
 #define MAX_NUM_INT_FEATURES 512
 #define INT_CHAR_NORM_RANGE  256
 
-struct INT_FEATURE_STRUCT
-{
+struct INT_FEATURE_STRUCT {
+  INT_FEATURE_STRUCT() : X(0), Y(0), Theta(0), CP_misses(0) { }
+  // Builds a feature from an FCOORD for position with all the necessary
+  // clipping and rounding.
+  INT_FEATURE_STRUCT(const FCOORD& pos, uinT8 theta);
+  // Builds a feature from ints with all the necessary clipping and casting.
+  INT_FEATURE_STRUCT(int x, int y, int theta);
+
   uinT8 X;
   uinT8 Y;
   uinT8 Theta;
@@ -210,9 +218,10 @@ void AddProtoToClassPruner(PROTO Proto,
 void AddProtoToProtoPruner(PROTO Proto, int ProtoId,
                            INT_CLASS Class, bool debug);
 
-int BucketFor(FLOAT32 Param, FLOAT32 Offset, int NumBuckets);
+uinT8 Bucket8For(FLOAT32 param, FLOAT32 offset, int num_buckets);
+uinT16 Bucket16For(FLOAT32 param, FLOAT32 offset, int num_buckets);
 
-int CircBucketFor(FLOAT32 Param, FLOAT32 Offset, int NumBuckets);
+uinT8 CircBucketFor(FLOAT32 param, FLOAT32 offset, int num_buckets);
 
 void UpdateMatchDisplay();
 

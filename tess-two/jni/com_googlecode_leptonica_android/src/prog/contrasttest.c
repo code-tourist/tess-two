@@ -27,74 +27,64 @@
 /*
  * contrasttest.c
  *
+ *   This appplies @factor contrast enhancement to the input image.
+ *   It also plots atan curves for different width parameters.
  */
 
 #include <math.h>
 #include "allheaders.h"
 
-#define   NPLOTS       5
-
-main(int    argc,
-     char **argv)
+int main(int    argc,
+         char **argv)
 {
 char        *filein, *fileout;
 char         bigbuf[512];
 l_int32      iplot;
 l_float32    factor;    /* scaled width of atan curve */
-l_float32    fact[NPLOTS] = {.2, 0.4, 0.6, 0.8, 1.0};
+l_float32    fact[] = {.2, 0.4, 0.6, 0.8, 1.0, -1.0};
 GPLOT       *gplot;
 NUMA        *na, *nax;
-PIX         *pixs, *pixd;
+PIX         *pixs;
 static char  mainName[] = "contrasttest";
 
     if (argc != 4)
-	return ERROR_INT(" Syntax:  contrasttest filein factor fileout",
-	       mainName, 1);
+        return ERROR_INT(" Syntax:  contrasttest filein factor fileout",
+               mainName, 1);
+
+    lept_mkdir("lept/contrast");
 
     filein = argv[1];
     factor = atof(argv[2]);
     fileout = argv[3];
 
     if ((pixs = pixRead(filein)) == NULL)
-	return ERROR_INT("pixs not made", mainName, 1);
-
-#if 0
-    startTimer();
-    pixContrastTRC(pixs, pixs, factor);
-    fprintf(stderr, "Time for contrast: %7.3f sec\n", stopTimer());
-    pixWrite(fileout, pixs, IFF_JFIF_JPEG);
-    pixDestroy(&pixs);
-#endif
-
-#if 0
-    startTimer();
-    pixd = pixContrastTRC(NULL, pixs, factor);
-    fprintf(stderr, "Time for contrast: %7.3f sec\n", stopTimer());
-    pixWrite(fileout, pixd, IFF_JFIF_JPEG);
-    pixDestroy(&pixs);
-    pixDestroy(&pixd);
-#endif
+        return ERROR_INT("pixs not made", mainName, 1);
 
     na = numaContrastTRC(factor);
-    gplotSimple1(na, GPLOT_X11, "junkroot", "contrast trc");
+    gplotSimple1(na, GPLOT_PNG, "/tmp/lept/contrast/trc1", "contrast trc");
+    l_fileDisplay("/tmp/lept/contrast/trc1.png", 0, 100, 1.0);
     numaDestroy(&na);
 
-#if 1     /* plot contrast TRC maps */
+         /* Plot contrast TRC maps */
     nax = numaMakeSequence(0.0, 1.0, 256);
-    gplot = gplotCreate("junkmap", GPLOT_X11,
+    gplot = gplotCreate("/tmp/lept/contrast/trc2", GPLOT_PNG,
         "Atan mapping function for contrast enhancement",
         "value in", "value out");
-    for (iplot = 0; iplot < NPLOTS; iplot++) {
-	na = numaContrastTRC(fact[iplot]);
-	sprintf(bigbuf, "factor = %3.1f", fact[iplot]);
+    for (iplot = 0; fact[iplot] >= 0.0; iplot++) {
+        na = numaContrastTRC(fact[iplot]);
+        sprintf(bigbuf, "factor = %3.1f", fact[iplot]);
         gplotAddPlot(gplot, nax, na, GPLOT_LINES, bigbuf);
-	numaDestroy(&na);
+        numaDestroy(&na);
     }
     gplotMakeOutput(gplot);
     gplotDestroy(&gplot);
+    l_fileDisplay("/tmp/lept/contrast/trc2.png", 600, 100, 1.0);
     numaDestroy(&nax);
-#endif
 
+        /* Apply the input contrast enhancement */
+    pixContrastTRC(pixs, pixs, factor);
+    pixWrite(fileout, pixs, IFF_PNG);
+    pixDestroy(&pixs);
     return 0;
 }
 

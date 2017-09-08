@@ -1,8 +1,8 @@
 /**********************************************************************
  * File:        rect.c  (Formerly box.c)
  * Description: Bounding box class definition.
- * Author:					Phil Cheatle
- * Created:					Wed Oct 16 15:18:45 BST 1991
+ * Author:          Phil Cheatle
+ * Created:         Wed Oct 16 15:18:45 BST 1991
  *
  * (C) Copyright 1991, Hewlett-Packard Ltd.
  ** Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,6 @@
  *
  **********************************************************************/
 
-#include          "mfcpch.h"     // precompiled headers
 #include          "rect.h"
 
 // Include automatically generated configuration file if running autoconf.
@@ -30,10 +29,10 @@
  *
  **********************************************************************/
 
-TBOX::TBOX(                   //construtor
-         const ICOORD pt1,  //one corner
-         const ICOORD pt2   //the other corner
-        ) {
+TBOX::TBOX(            // constructor
+    const ICOORD pt1,  // one corner
+    const ICOORD pt2   // the other corner
+    ) {
   if (pt1.x () <= pt2.x ()) {
     if (pt1.y () <= pt2.y ()) {
       bot_left = pt1;
@@ -171,6 +170,16 @@ void TBOX::plot(                      //paint box
   plot(fd);
 }
 #endif
+
+// Appends the bounding box as (%d,%d)->(%d,%d) to a STRING.
+void TBOX::print_to_str(STRING *str) const {
+  // "(%d,%d)->(%d,%d)", left(), bottom(), right(), top()
+  str->add_str_int("(", left());
+  str->add_str_int(",", bottom());
+  str->add_str_int(")->(", right());
+  str->add_str_int(",", top());
+  *str += ')';
+}
 
 // Writes to the given file. Returns false in case of error.
 bool TBOX::Serialize(FILE* fp) const {

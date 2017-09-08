@@ -24,8 +24,9 @@
  -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
-/*
- *  convertfiles.c
+/*!
+ * \file convertfiles.c
+ * <pre>
  *
  *      Conversion to 1 bpp
  *          l_int32    convertFilesTo1bpp()
@@ -33,6 +34,7 @@
  *  These are utility functions that will perform depth conversion
  *  on selected files, writing the results to a specified directory.
  *  We start with conversion to 1 bpp.
+ * </pre>
  */
 
 #include <string.h>
@@ -43,21 +45,23 @@
  *                        Conversion to 1 bpp                       *
  *------------------------------------------------------------------*/
 /*!
- *  convertFilesTo1bpp()
+ * \brief   convertFilesTo1bpp()
  *
- *      Input:  dirin
- *              substr (<optional> substring filter on filenames; can be NULL)
- *              upscaling (1, 2 or 4; only for input color or grayscale)
- *              thresh  (global threshold for binarization; use 0 for default)
- *              firstpage
- *              npages (use 0 to do all from @firstpage to the end)
- *              dirout
- *              outformat (IFF_PNG, IFF_TIFF_G4)
- *      Return: 0 if OK, 1 on error
+ * \param[in]    dirin
+ * \param[in]    substr [optional] substring filter on filenames; can be NULL
+ * \param[in]    upscaling 1, 2 or 4; only for input color or grayscale
+ * \param[in]    thresh  global threshold for binarization; use 0 for default
+ * \param[in]    firstpage
+ * \param[in]    npages use 0 to do all from %firstpage to the end
+ * \param[in]    dirout
+ * \param[in]    outformat IFF_PNG, IFF_TIFF_G4
+ * \return  0 if OK, 1 on error
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) Images are sorted lexicographically, and the names in the
  *          output directory are retained except for the extension.
+ * </pre>
  */
 l_int32
 convertFilesTo1bpp(const char  *dirin,
@@ -100,7 +104,7 @@ SARRAY  *safiles;
     for (i = 0; i < nfiles; i++) {
         fname = sarrayGetString(safiles, i, L_NOCOPY);
         if ((pixs = pixRead(fname)) == NULL) {
-            L_WARNING_STRING("Couldn't read file %s\n", procName, fname);
+            L_WARNING("Couldn't read file %s\n", procName, fname);
             continue;
         }
         if (pixGetDepth(pixs) == 32)
@@ -108,9 +112,9 @@ SARRAY  *safiles;
         else
             pixg1 = pixClone(pixs);
         pixg2 = pixRemoveColormap(pixg1, REMOVE_CMAP_TO_GRAYSCALE);
-        if (pixGetDepth(pixg2) == 1)
+        if (pixGetDepth(pixg2) == 1) {
             pixb = pixClone(pixg2);
-        else {
+        } else {
             if (upscaling == 1)
                 pixb = pixThresholdToBinary(pixg2, thresh);
             else if (upscaling == 2)
@@ -127,14 +131,13 @@ SARRAY  *safiles;
         if (outformat == IFF_TIFF_G4) {
             snprintf(buf, sizeof(buf), "%s/%s.tif", dirout, basename);
             pixWrite(buf, pixb, IFF_TIFF_G4);
-        }
-        else {
+        } else {
             snprintf(buf, sizeof(buf), "%s/%s.png", dirout, basename);
             pixWrite(buf, pixb, IFF_PNG);
         }
         pixDestroy(&pixb);
-        FREE(tail);
-        FREE(basename);
+        LEPT_FREE(tail);
+        LEPT_FREE(basename);
     }
 
     sarrayDestroy(&safiles);

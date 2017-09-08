@@ -95,7 +95,7 @@ void FreeTempProto(void *arg) {
 
 void FreePermConfig(PERM_CONFIG Config) {
   assert(Config != NULL);
-  Efree(Config->Ambigs);
+  delete [] Config->Ambigs;
   free_struct(Config, sizeof(PERM_CONFIG_STRUCT), "PERM_CONFIG_STRUCT");
 }
 
@@ -275,7 +275,6 @@ void Classify::PrintAdaptedTemplates(FILE *File, ADAPT_TEMPLATES Templates) {
   INT_CLASS IClass;
   ADAPT_CLASS AClass;
 
-  #ifndef SECURE_NAMES
   fprintf (File, "\n\nSUMMARY OF ADAPTED TEMPLATES:\n\n");
   fprintf (File, "Num classes = %d;  Num permanent classes = %d\n\n",
            Templates->NumNonEmptyClasses, Templates->NumPermClasses);
@@ -293,7 +292,6 @@ void Classify::PrintAdaptedTemplates(FILE *File, ADAPT_TEMPLATES Templates) {
       IClass->NumProtos - count (AClass->TempProtos));
     }
   }
-  #endif
   fprintf (File, "\n");
 
 }                                /* PrintAdaptedTemplates */
@@ -313,8 +311,8 @@ void Classify::PrintAdaptedTemplates(FILE *File, ADAPT_TEMPLATES Templates) {
  * @note History: Tue Mar 19 14:11:01 1991, DSJ, Created.
  */
 ADAPT_CLASS ReadAdaptedClass(FILE *File) {
-  int NumTempProtos;
-  int NumConfigs;
+  int32_t NumTempProtos;
+  int32_t NumConfigs;
   int i;
   ADAPT_CLASS Class;
   TEMP_PROTO TempProto;
@@ -332,7 +330,7 @@ ADAPT_CLASS ReadAdaptedClass(FILE *File) {
     WordsInVectorOfSize (MAX_NUM_CONFIGS), File);
 
   /* then read in the list of temporary protos */
-  fread ((char *) &NumTempProtos, sizeof (int), 1, File);
+  fread (&NumTempProtos, sizeof(NumTempProtos), 1, File);
   Class->TempProtos = NIL_LIST;
   for (i = 0; i < NumTempProtos; i++) {
     TempProto =
@@ -343,7 +341,7 @@ ADAPT_CLASS ReadAdaptedClass(FILE *File) {
   }
 
   /* then read in the adapted configs */
-  fread ((char *) &NumConfigs, sizeof (int), 1, File);
+  fread (&NumConfigs, sizeof(NumConfigs), 1, File);
   for (i = 0; i < NumConfigs; i++)
     if (test_bit (Class->PermConfigs, i))
       Class->Config[i].Perm = ReadPermConfig (File);
@@ -406,7 +404,7 @@ PERM_CONFIG ReadPermConfig(FILE *File) {
                                                   "PERM_CONFIG_STRUCT");
   uinT8 NumAmbigs;
   fread ((char *) &NumAmbigs, sizeof(uinT8), 1, File);
-  Config->Ambigs = (UNICHAR_ID *)Emalloc(sizeof(UNICHAR_ID) * (NumAmbigs + 1));
+  Config->Ambigs = new UNICHAR_ID[NumAmbigs + 1];
   fread(Config->Ambigs, sizeof(UNICHAR_ID), NumAmbigs, File);
   Config->Ambigs[NumAmbigs] = -1;
   fread(&(Config->FontinfoId), sizeof(int), 1, File);

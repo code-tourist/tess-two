@@ -25,8 +25,9 @@
  *====================================================================*/
 
 
-/*
- *  stack.c
+/*!
+ * \file stack.c
+ * <pre>
  *
  *      Generic stack
  *
@@ -42,32 +43,36 @@
  *      to remove an object from an empty lstack, the result is null.
  *
  *      Create/Destroy
- *           L_STACK   *lstackCreate()
- *           void       lstackDestroy()
+ *           L_STACK        *lstackCreate()
+ *           void            lstackDestroy()
  *
  *      Accessors
- *           l_int32    lstackAdd()
- *           void      *lstackRemove()
- *           l_int32    lstackExtendArray()
- *           l_int32    lstackGetCount()
+ *           l_int32         lstackAdd()
+ *           void           *lstackRemove()
+ *           static l_int32  lstackExtendArray()
+ *           l_int32         lstackGetCount()
  *
  *      Text description
- *           l_int32    lstackPrint()
+ *           l_int32         lstackPrint()
+ * </pre>
  */
 
 #include "allheaders.h"
 
 static const l_int32  INITIAL_PTR_ARRAYSIZE = 20;
 
+    /* Static function */
+static l_int32 lstackExtendArray(L_STACK *lstack);
+
 
 /*---------------------------------------------------------------------*
  *                          Create/Destroy                             *
  *---------------------------------------------------------------------*/
 /*!
- *  lstackCreate()
+ * \brief   lstackCreate()
  *
- *      Input:  nalloc (initial ptr array size; use 0 for default)
- *      Return: lstack, or null on error
+ * \param[in]    nalloc initial ptr array size; use 0 for default
+ * \return  lstack, or NULL on error
  */
 L_STACK *
 lstackCreate(l_int32  nalloc)
@@ -79,11 +84,12 @@ L_STACK  *lstack;
     if (nalloc <= 0)
         nalloc = INITIAL_PTR_ARRAYSIZE;
 
-    if ((lstack = (L_STACK *)CALLOC(1, sizeof(L_STACK))) == NULL)
-        return (L_STACK *)ERROR_PTR("lstack not made", procName, NULL);
-
-    if ((lstack->array = (void **)CALLOC(nalloc, sizeof(void *))) == NULL)
+    lstack = (L_STACK *)LEPT_CALLOC(1, sizeof(L_STACK));
+    lstack->array = (void **)LEPT_CALLOC(nalloc, sizeof(void *));
+    if (!lstack->array) {
+        lstackDestroy(&lstack, FALSE);
         return (L_STACK *)ERROR_PTR("lstack array not made", procName, NULL);
+    }
 
     lstack->nalloc = nalloc;
     lstack->n = 0;
@@ -93,13 +99,14 @@ L_STACK  *lstack;
 
 
 /*!
- *  lstackDestroy()
+ * \brief   lstackDestroy()
  *
- *      Input:  &lstack (<to be nulled>)
- *              freeflag (TRUE to free each remaining struct in the array)
- *      Return: void
+ * \param[in,out]   plstack to be nulled
+ * \param[in]    freeflag TRUE to free each remaining struct in the array
+ * \return  void
  *
- *  Notes:
+ * <pre>
+ * Notes:
  *      (1) If freeflag is TRUE, frees each struct in the array.
  *      (2) If freeflag is FALSE but there are elements on the array,
  *          gives a warning and destroys the array.  This will
@@ -108,6 +115,7 @@ L_STACK  *lstack;
  *          must be destroyed before the lstack.
  *      (3) To destroy the lstack, we destroy the ptr array, then
  *          the lstack, and then null the contents of the input ptr.
+ * </pre>
  */
 void
 lstackDestroy(L_STACK  **plstack,
@@ -119,7 +127,7 @@ L_STACK  *lstack;
     PROCNAME("lstackDestroy");
 
     if (plstack == NULL) {
-        L_WARNING("ptr address is NULL", procName);
+        L_WARNING("ptr address is NULL\n", procName);
         return;
     }
     if ((lstack = *plstack) == NULL)
@@ -128,18 +136,18 @@ L_STACK  *lstack;
     if (freeflag) {
         while(lstack->n > 0) {
             item = lstackRemove(lstack);
-            FREE(item);
+            LEPT_FREE(item);
         }
+    } else if (lstack->n > 0) {
+        L_WARNING("memory leak of %d items in lstack\n", procName, lstack->n);
     }
-    else if (lstack->n > 0)
-        L_WARNING_INT("memory leak of %d items in lstack", procName, lstack->n);
 
     if (lstack->auxstack)
         lstackDestroy(&lstack->auxstack, freeflag);
 
     if (lstack->array)
-        FREE(lstack->array);
-    FREE(lstack);
+        LEPT_FREE(lstack->array);
+    LEPT_FREE(lstack);
     *plstack = NULL;
 }
 
@@ -149,11 +157,11 @@ L_STACK  *lstack;
  *                               Accessors                             *
  *---------------------------------------------------------------------*/
 /*!
- *  lstackAdd()
+ * \brief   lstackAdd()
  *
- *      Input:  lstack
- *              item to be added to the lstack
- *      Return: 0 if OK; 1 on error.
+ * \param[in]    lstack
+ * \param[in]    item to be added to the lstack
+ * \return  0 if OK; 1 on error.
  */
 l_int32
 lstackAdd(L_STACK  *lstack,
@@ -179,11 +187,11 @@ lstackAdd(L_STACK  *lstack,
 
 
 /*!
- *  lstackRemove()
+ * \brief   lstackRemove()
  *
- *      Input:  lstack
- *      Return: ptr to item popped from the top of the lstack,
- *              or null if the lstack is empty or on error
+ * \param[in]    lstack
+ * \return  ptr to item popped from the top of the lstack,
+ *              or NULL if the lstack is empty or on error
  */
 void *
 lstackRemove(L_STACK  *lstack)
@@ -206,12 +214,12 @@ void  *item;
 
 
 /*!
- *  lstackExtendArray()
+ * \brief   lstackExtendArray()
  *
- *      Input:  lstack
- *      Return: 0 if OK; 1 on error
+ * \param[in]    lstack
+ * \return  0 if OK; 1 on error
  */
-l_int32
+static l_int32
 lstackExtendArray(L_STACK  *lstack)
 {
     PROCNAME("lstackExtendArray");
@@ -230,10 +238,10 @@ lstackExtendArray(L_STACK  *lstack)
 
 
 /*!
- *  lstackGetCount()
+ * \brief   lstackGetCount()
  *
- *      Input:  lstack
- *      Return: count, or 0 on error
+ * \param[in]    lstack
+ * \return  count, or 0 on error
  */
 l_int32
 lstackGetCount(L_STACK  *lstack)
@@ -252,11 +260,11 @@ lstackGetCount(L_STACK  *lstack)
  *                            Debug output                             *
  *---------------------------------------------------------------------*/
 /*!
- *  lstackPrint()
+ * \brief   lstackPrint()
  *
- *      Input:  stream
- *              lstack
- *      Return: 0 if OK; 1 on error
+ * \param[in]    fp file stream
+ * \param[in]    lstack
+ * \return  0 if OK; 1 on error
  */
 l_int32
 lstackPrint(FILE     *fp,
